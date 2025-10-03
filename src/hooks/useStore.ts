@@ -11,15 +11,15 @@ export interface Customer {
 }
 
 export interface Product {
-  id: string;
+  id: number;
   code: string;
   name: string;
   series: string;
   vendor: string;
-  remark?: string;
+  remark: string;
   price: number;
-  originalPrice: number;
-  state: '啟用中' | '停用' | '預購中' | '售完停產';
+  originalPrice?: number;
+  state?: '啟用中' | '停用' | '預購中' | '售完停產';
   barcode?: string;
   systemCode?: string;
   isPriceModified?: boolean;
@@ -56,6 +56,7 @@ interface StoreState {
   // UI 狀態
   expandedComponent: string | null;
   showSuccessModal: boolean;
+  productSidebarOpen: boolean;
   
   // Actions
   setCustomers: (customers: Customer[]) => void;
@@ -69,6 +70,7 @@ interface StoreState {
   updateSalesItem: (index: number, updates: Partial<SalesItem>) => void;
   removeSalesItem: (index: number) => void;
   clearSalesItems: () => void;
+  reorderSalesItems: (items: SalesItem[]) => void;
   
   // 訂單資訊
   updateOrderInfo: (info: Partial<OrderInfo>) => void;
@@ -76,6 +78,7 @@ interface StoreState {
   // UI 控制
   setExpandedComponent: (component: string | null) => void;
   setShowSuccessModal: (show: boolean) => void;
+  setProductSidebarOpen: (open: boolean) => void;
   
   // 清除功能
   clearCustomer: () => void;
@@ -94,7 +97,38 @@ export const useStore = create<StoreState>()(
       // 初始狀態
       customers: [],
       selectedCustomer: null,
-      products: [],
+      products: [
+        { id: 1, code: "IMOS-TB-001", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 PRO MAX (6.9吋)", remark: "相機按鍵版-磁吸(MAG)款-丁香紫", price: 1290 },
+        { id: 2, code: "IMOS-TB-002", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 (6.3吋)", remark: "相機按鍵版-磁吸(MAG)款-亞麻綠", price: 1290 },
+        { id: 3, code: "IMOS-TB-003", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 AIR (6.6吋)", remark: "相機按鍵版-磁吸(MAG)款-亞麻綠", price: 1290 },
+        { id: 4, code: "IMOS-TB-004", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 PRO (6.3吋)", remark: "相機按鍵版-磁吸(MAG)款-亞麻綠", price: 1290 },
+        { id: 5, code: "IMOS-TB-005", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 PRO MAX (6.9吋)", remark: "相機按鍵版-磁吸(MAG)款-亞麻綠", price: 1290 },
+        { id: 6, code: "IMOS-TB-006", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 (6.3吋)", remark: "相機按鍵版-磁吸(MAG)款-透明", price: 1290 },
+        { id: 7, code: "IMOS-TB-007", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 AIR (6.6吋)", remark: "相機按鍵版-磁吸(MAG)款-透明", price: 1290 },
+        { id: 8, code: "IMOS-TB-008", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 PRO (6.3吋)", remark: "相機按鍵版-磁吸(MAG)款-透明", price: 1290 },
+        { id: 9, code: "IMOS-TB-009", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 PRO MAX (6.9吋)", remark: "相機按鍵版-磁吸(MAG)款-透明", price: 1290 },
+        { id: 10, code: "IMOS-TB-010", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 (6.3吋)", remark: "相機按鍵版-磁吸(MAG)款-黑色", price: 1290 },
+        { id: 11, code: "IMOS-TB-011", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 AIR (6.6吋)", remark: "相機按鍵版-磁吸(MAG)款-黑色", price: 1290 },
+        { id: 12, code: "IMOS-TB-012", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 PRO (6.3吋)", remark: "相機按鍵版-磁吸(MAG)款-黑色", price: 1290 },
+        { id: 13, code: "IMOS-TB-013", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 PRO MAX (6.9吋)", remark: "相機按鍵版-磁吸(MAG)款-黑色", price: 1290 },
+        { id: 14, code: "IMOS-TB-014", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 (6.3吋)", remark: "相機按鍵版-磁吸(MAG)款-藍莓色", price: 1290 },
+        { id: 15, code: "IMOS-TB-015", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 AIR (6.6吋)", remark: "相機按鍵版-磁吸(MAG)款-藍莓色", price: 1290 },
+        { id: 16, code: "IMOS-TB-016", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 PRO (6.3吋)", remark: "相機按鍵版-磁吸(MAG)款-藍莓色", price: 1290 },
+        { id: 17, code: "IMOS-TB-017", name: "TREND BOOST 二代(金屬LOGO) 軍規防摔殼", vendor: "IMOS", series: "IPhone 17 PRO MAX (6.9吋)", remark: "相機按鍵版-磁吸(MAG)款-藍莓色", price: 1290 },
+        { id: 18, code: "IMOS-LF-001", name: "藍寶石玻璃金屬鏡頭框-鋁合金", vendor: "IMOS", series: "IPhone 17", remark: "綠色 (鋁合金)", price: 890 },
+        { id: 19, code: "IMOS-LF-002", name: "藍寶石玻璃金屬鏡頭框-不鏽鋼", vendor: "IMOS", series: "IPhone 17 PRO/17 PRO MAX", remark: "銀色 (不鏽鋼)", price: 990 },
+        { id: 20, code: "IMOS-LF-003", name: "藍寶石玻璃金屬鏡頭框-鈦合金", vendor: "IMOS", series: "IPhone 17 Air", remark: "銀色 (鈦合金)", price: 1190 },
+        { id: 21, code: "IMOS-LF-004", name: "藍寶石玻璃金屬鏡頭框-鋁合金", vendor: "IMOS", series: "IPhone 17", remark: "銀色 (鋁合金)", price: 890 },
+        { id: 22, code: "IMOS-LF-005", name: "藍寶石玻璃金屬鏡頭框-鋁合金", vendor: "IMOS", series: "IPhone 17 PRO/17 PRO MAX", remark: "橘色 (鋁合金)", price: 890 },
+        { id: 23, code: "IMOS-LF-006", name: "藍寶石玻璃金屬鏡頭框-不鏽鋼", vendor: "IMOS", series: "IPhone 17", remark: "燒鈦色 (不鏽鋼)", price: 990 },
+        { id: 24, code: "IMOS-LF-007", name: "藍寶石玻璃金屬鏡頭框-不鏽鋼", vendor: "IMOS", series: "IPhone 17 Air", remark: "燒鈦色 (不鏽鋼)", price: 990 },
+        { id: 25, code: "IMOS-LF-008", name: "藍寶石玻璃金屬鏡頭框-不鏽鋼", vendor: "IMOS", series: "IPhone 17 PRO/17 PRO MAX", remark: "燒鈦色 (不鏽鋼)", price: 990 },
+        { id: 26, code: "IMOS-LF-009", name: "藍寶石玻璃金屬鏡頭框-不鏽鋼", vendor: "IMOS", series: "IPhone 17 PRO/17 PRO MAX", remark: "藍色 (不鏽鋼)", price: 990 },
+        { id: 27, code: "IMOS-LF-010", name: "藍寶石玻璃金屬鏡頭框-鈦合金", vendor: "IMOS", series: "IPhone 17 Air", remark: "藍色 (鈦合金)", price: 1190 },
+        { id: 28, code: "IMOS-LF-011", name: "藍寶石玻璃金屬鏡頭框-鋁合金", vendor: "IMOS", series: "IPhone 17", remark: "藍色 (鋁合金)", price: 890 },
+        { id: 29, code: "IMOS-AR-001", name: "AR低反射", vendor: "IMOS", series: "IPhone 17 AIR (6.6吋)", remark: "AR-亮面", price: 790 },
+        { id: 30, code: "IMOS-AR-002", name: "AR低反射", vendor: "IMOS", series: "IPhone 17 PRO MAX (6.9吋)", remark: "AR-亮面", price: 790 },
+      ],
       selectedProducts: [],
       salesItems: [],
       orderInfo: {
@@ -104,6 +138,7 @@ export const useStore = create<StoreState>()(
       },
       expandedComponent: null,
       showSuccessModal: false,
+      productSidebarOpen: false,
 
       // Actions
       setCustomers: (customers) => set({ customers }),
@@ -171,6 +206,8 @@ export const useStore = create<StoreState>()(
       },
       
       clearSalesItems: () => set({ salesItems: [] }),
+      
+      reorderSalesItems: (items) => set({ salesItems: items }),
 
       // 訂單資訊
       updateOrderInfo: (info) => {
@@ -181,6 +218,7 @@ export const useStore = create<StoreState>()(
       // UI 控制
       setExpandedComponent: (component) => set({ expandedComponent: component }),
       setShowSuccessModal: (show) => set({ showSuccessModal: show }),
+      setProductSidebarOpen: (open) => set({ productSidebarOpen: open }),
 
       // 清除功能
       clearCustomer: () => set({ 
