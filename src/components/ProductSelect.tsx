@@ -48,9 +48,14 @@ export const ProductSelect = () => {
   } = useStore();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchName, setSearchName] = useState("");
+  const [searchVendor, setSearchVendor] = useState("");
+  const [searchSeries, setSearchSeries] = useState("");
+  const [searchRemark, setSearchRemark] = useState("");
   const [activeTab, setActiveTab] = useState("list");
   const [showAsButton, setShowAsButton] = useState(true);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // 初始化產品資料
   useMemo(() => {
@@ -61,22 +66,39 @@ export const ProductSelect = () => {
 
   // 篩選產品
   const filteredProducts = useMemo(() => {
-    const keywords = searchQuery.toLowerCase().split(" ").filter(k => k.trim());
-    
     return products.filter(product => {
       if (product.state === "停用") return false;
       
-      if (keywords.length === 0) return true;
+      // 一般搜尋
+      if (searchQuery) {
+        const keywords = searchQuery.toLowerCase().split(" ").filter(k => k.trim());
+        const matchesGeneral = keywords.every(keyword =>
+          product.name.toLowerCase().includes(keyword) ||
+          product.vendor.toLowerCase().includes(keyword) ||
+          product.series.toLowerCase().includes(keyword) ||
+          (product.remark && product.remark.toLowerCase().includes(keyword)) ||
+          product.code.toLowerCase().includes(keyword)
+        );
+        if (!matchesGeneral) return false;
+      }
       
-      return keywords.every(keyword =>
-        product.name.toLowerCase().includes(keyword) ||
-        product.vendor.toLowerCase().includes(keyword) ||
-        product.series.toLowerCase().includes(keyword) ||
-        (product.remark && product.remark.toLowerCase().includes(keyword)) ||
-        product.code.toLowerCase().includes(keyword)
-      );
+      // 進階搜尋
+      if (searchName && !product.name.toLowerCase().includes(searchName.toLowerCase())) {
+        return false;
+      }
+      if (searchVendor && !product.vendor.toLowerCase().includes(searchVendor.toLowerCase())) {
+        return false;
+      }
+      if (searchSeries && !product.series.toLowerCase().includes(searchSeries.toLowerCase())) {
+        return false;
+      }
+      if (searchRemark && !(product.remark || "").toLowerCase().includes(searchRemark.toLowerCase())) {
+        return false;
+      }
+      
+      return true;
     });
-  }, [products, searchQuery]);
+  }, [products, searchQuery, searchName, searchVendor, searchSeries, searchRemark]);
 
   // 按廠商分組產品
   const groupedProducts = useMemo(() => {
@@ -113,7 +135,10 @@ export const ProductSelect = () => {
   // 選擇產品
   const handleSelectProduct = (product: Product) => {
     if (!selectedCustomer) {
-      toast.error("請先選擇客戶");
+      toast.error("請先選擇客戶", {
+        description: "請先至客戶資訊選擇客戶",
+        duration: 3000
+      });
       return;
     }
 
@@ -125,7 +150,10 @@ export const ProductSelect = () => {
   // 批量添加產品（表格模式）
   const handleBatchAdd = () => {
     if (!selectedCustomer) {
-      toast.error("請先選擇客戶");
+      toast.error("請先選擇客戶", {
+        description: "請先至客戶資訊選擇客戶",
+        duration: 3000
+      });
       return;
     }
 
@@ -174,14 +202,94 @@ export const ProductSelect = () => {
         </CardTitle>
         
         {/* 搜尋框 */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="搜尋產品名稱、廠商、系列..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-elegant pl-10"
-          />
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="快速搜尋：產品名稱、廠商、系列..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input-elegant pl-10"
+            />
+          </div>
+          
+          {/* 進階篩選切換 */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className="w-full"
+          >
+            {showAdvancedFilters ? "隱藏進階篩選" : "顯示進階篩選"}
+          </Button>
+
+          {/* 進階篩選 */}
+          {showAdvancedFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-accent/20 rounded-lg animate-slide-up">
+              <div className="space-y-2">
+                <Label htmlFor="search-name" className="text-xs font-medium">產品名稱</Label>
+                <Input
+                  id="search-name"
+                  placeholder="搜尋產品名稱..."
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                  className="input-elegant"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="search-vendor" className="text-xs font-medium">廠商</Label>
+                <Input
+                  id="search-vendor"
+                  placeholder="搜尋廠商..."
+                  value={searchVendor}
+                  onChange={(e) => setSearchVendor(e.target.value)}
+                  className="input-elegant"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="search-series" className="text-xs font-medium">系列</Label>
+                <Input
+                  id="search-series"
+                  placeholder="搜尋系列..."
+                  value={searchSeries}
+                  onChange={(e) => setSearchSeries(e.target.value)}
+                  className="input-elegant"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="search-remark" className="text-xs font-medium">備註</Label>
+                <Input
+                  id="search-remark"
+                  placeholder="搜尋備註..."
+                  value={searchRemark}
+                  onChange={(e) => setSearchRemark(e.target.value)}
+                  className="input-elegant"
+                />
+              </div>
+
+              {/* 清除篩選按鈕 */}
+              {(searchName || searchVendor || searchSeries || searchRemark) && (
+                <div className="col-span-full">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSearchName("");
+                      setSearchVendor("");
+                      setSearchSeries("");
+                      setSearchRemark("");
+                    }}
+                    className="w-full"
+                  >
+                    清除所有篩選
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </CardHeader>
 

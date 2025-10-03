@@ -231,6 +231,8 @@ export const useStore = create<StoreState>()(
       partialize: (state) => ({
         customers: state.customers,
         products: state.products,
+        selectedCustomer: state.selectedCustomer,
+        salesItems: state.salesItems,
         orderInfo: state.orderInfo,
       }),
     }

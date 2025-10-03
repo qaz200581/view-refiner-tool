@@ -108,11 +108,19 @@ export const SalesProductList = () => {
   if (!selectedCustomer) {
     return (
       <Card className="card-elegant animate-fade-in">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-primary">
+            <ShoppingCart className="w-5 h-5" />
+            銷售清單
+          </CardTitle>
+        </CardHeader>
         <CardContent className="py-12">
-          <div className="text-center text-muted-foreground">
+          <div className="text-center text-muted-foreground space-y-4">
             <Package className="w-16 h-16 mx-auto mb-4 opacity-50" />
-            <p className="text-lg">請先選擇客戶</p>
-            <p className="text-sm">選擇客戶後即可開始添加商品</p>
+            <div>
+              <p className="text-lg font-medium">請先選擇客戶</p>
+              <p className="text-sm mt-2">請至「客戶資訊」區域選擇或輸入客戶資料</p>
+            </div>
           </div>
         </CardContent>
       </Card>

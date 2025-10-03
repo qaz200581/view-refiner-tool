@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StoreHeader } from "@/components/StoreHeader";
 import { CustomerSelect } from "@/components/CustomerSelect";
 import { ProductSelect } from "@/components/ProductSelect";
@@ -6,6 +6,7 @@ import { SalesProductList } from "@/components/SalesProductList";
 import { useStore } from "@/hooks/useStore";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { CheckCircle } from "lucide-react";
 
 const Index = () => {
@@ -14,10 +15,32 @@ const Index = () => {
     setExpandedComponent, 
     showSuccessModal, 
     setShowSuccessModal,
-    clearAll 
+    clearAll,
+    salesItems,
+    selectedCustomer
   } = useStore();
   
   const [isMobile] = useState(() => window.innerWidth < 768);
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+
+  // 檢查是否有未完成的資料
+  useEffect(() => {
+    const hasData = salesItems.length > 0 || selectedCustomer !== null;
+    if (hasData) {
+      setShowRestoreDialog(true);
+    }
+  }, []); // 只在初次載入時執行
+
+  // 處理保留資料
+  const handleKeepData = () => {
+    setShowRestoreDialog(false);
+  };
+
+  // 處理清除資料
+  const handleClearData = () => {
+    clearAll();
+    setShowRestoreDialog(false);
+  };
 
   // 移動端展開組件控制
   const handleExpandComponent = (component: string) => {
@@ -37,7 +60,7 @@ const Index = () => {
     if (isMobile && expandedComponent) {
       return "grid grid-cols-1 gap-4 min-h-screen";
     }
-    return "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-min";
+    return "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-min max-w-screen-2xl mx-auto";
   };
 
   // 組件顯示邏輯（移動端）
@@ -62,7 +85,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-elegant">
-      <div className="container-responsive py-6">
+      <div className="container mx-auto px-4 py-6 max-w-[1920px]">
         {/* 頂部標題列 */}
         <StoreHeader />
 
@@ -132,6 +155,26 @@ const Index = () => {
             </div>
           )}
         </div>
+
+        {/* 恢復資料對話框 */}
+        <AlertDialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>發現未完成的資料</AlertDialogTitle>
+              <AlertDialogDescription>
+                系統偵測到您有未完成的訂單資料，是否要繼續編輯？
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleClearData}>
+                清除資料
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleKeepData}>
+                繼續編輯
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* 成功提交模態框 */}
         <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
