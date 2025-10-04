@@ -102,8 +102,9 @@ const SortableItem = ({
   }, [products, item.vendor, item.name, item.series]);
 
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-3 p-4 border rounded-lg bg-surface hover:shadow-md transition-shadow">
-      <div className="flex items-center gap-2">
+    <div ref={setNodeRef} style={style} className="flex flex-col md:flex-row items-start md:items-center gap-3 p-4 border rounded-lg bg-surface hover:shadow-md transition-shadow">
+      {/* 操作按鈕 */}
+      <div className="flex items-center gap-2 flex-shrink-0">
         <Button variant="ghost" size="icon" className="cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>
           <GripVertical className="w-4 h-4" />
         </Button>
@@ -118,35 +119,143 @@ const SortableItem = ({
         </DropdownMenu>
       </div>
 
-      <div className="flex-1 min-w-0">
+      {/* 商品資訊 */}
+      <div className="flex-1 min-w-0 w-full md:w-auto">
+        {/* 手機版排版 */}
         <div className="md:hidden space-y-2">
-          <div className="flex items-start justify-between">
-            <div><h4 className="font-medium text-sm">{item.vendor} • {item.name}</h4><Badge variant="outline" className="text-xs mt-1">{item.code}</Badge></div>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-sm">{item.vendor} • {item.name}</h4>
+              <Badge variant="outline" className="text-xs mt-1">{item.code}</Badge>
+            </div>
           </div>
-          <div>{seriesForProduct.length > 0 ? <Select value={item.series} onValueChange={(v) => onSeriesChange(index, v)}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent>{seriesForProduct.map(s => <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>)}</SelectContent></Select> : <p className="text-xs text-muted-foreground">{item.series}</p>}</div>
-          <div>{remarksForSeries.length > 0 ? <Select value={item.remark} onValueChange={(v) => onRemarkChange(index, v)}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent>{remarksForSeries.map(r => <SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>)}</SelectContent></Select> : <p className="text-xs text-muted-foreground">{item.remark}</p>}</div>
+          
+          <div className="space-y-1">
+            {seriesForProduct.length > 0 ? (
+              <Select value={item.series} onValueChange={(v) => onSeriesChange(index, v)}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {seriesForProduct.map(s => (
+                    <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="text-xs text-muted-foreground">{item.series}</p>
+            )}
+            
+            {remarksForSeries.length > 0 ? (
+              <Select value={item.remark} onValueChange={(v) => onRemarkChange(index, v)}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {remarksForSeries.map(r => (
+                    <SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="text-xs text-muted-foreground">{item.remark}</p>
+            )}
+          </div>
         </div>
+
+        {/* 桌面版排版 */}
         <div className="hidden md:block">
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1"><h4 className="font-medium text-sm">{item.vendor} • {item.name}</h4>
-              <div className="flex items-center gap-2 mt-1">
-                {seriesForProduct.length > 0 ? <Select value={item.series} onValueChange={(v) => onSeriesChange(index, v)}><SelectTrigger className="h-7 text-xs w-48"><SelectValue /></SelectTrigger><SelectContent>{seriesForProduct.map(s => <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>)}</SelectContent></Select> : <p className="text-xs text-muted-foreground">{item.series}</p>}
-                {remarksForSeries.length > 0 ? <Select value={item.remark} onValueChange={(v) => onRemarkChange(index, v)}><SelectTrigger className="h-7 text-xs w-48"><SelectValue /></SelectTrigger><SelectContent>{remarksForSeries.map(r => <SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>)}</SelectContent></Select> : <p className="text-xs text-muted-foreground">{item.remark}</p>}
+          <div className="flex items-start justify-between gap-4 mb-2">
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-sm mb-2">{item.vendor} • {item.name}</h4>
+              <div className="flex items-center gap-2 flex-wrap">
+                {seriesForProduct.length > 0 ? (
+                  <Select value={item.series} onValueChange={(v) => onSeriesChange(index, v)}>
+                    <SelectTrigger className="h-7 text-xs w-auto min-w-[200px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {seriesForProduct.map(s => (
+                        <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-xs text-muted-foreground">{item.series}</p>
+                )}
+                
+                {remarksForSeries.length > 0 ? (
+                  <Select value={item.remark} onValueChange={(v) => onRemarkChange(index, v)}>
+                    <SelectTrigger className="h-7 text-xs w-auto min-w-[200px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {remarksForSeries.map(r => (
+                        <SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-xs text-muted-foreground">{item.remark}</p>
+                )}
               </div>
             </div>
-            <Badge variant="outline" className="text-xs">{item.code}</Badge>
+            <Badge variant="outline" className="text-xs flex-shrink-0">{item.code}</Badge>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => onQuantityChange(index, -1)} className="w-8 h-8 p-0"><Minus className="w-3 h-3" /></Button>
-        <Input type="number" min="1" value={item.quantity} onChange={(e) => onQuantityInput(index, e.target.value)} onFocus={() => setEditingQuantity(index)} onBlur={() => setEditingQuantity(null)} onKeyDown={(e) => handleKeyDown(e, index, "quantity")} className="quantity-input w-16 text-center text-sm" />
-        <Button variant="outline" size="sm" onClick={() => onQuantityChange(index, 1)} className="w-8 h-8 p-0"><Plus className="w-3 h-3" /></Button>
+      {/* 數量控制 */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => onQuantityChange(index, -1)} 
+          className="w-8 h-8 p-0"
+        >
+          <Minus className="w-3 h-3" />
+        </Button>
+        <Input 
+          type="number" 
+          min="1" 
+          value={item.quantity} 
+          onChange={(e) => onQuantityInput(index, e.target.value)} 
+          onFocus={() => setEditingQuantity(index)} 
+          onBlur={() => setEditingQuantity(null)} 
+          onKeyDown={(e) => handleKeyDown(e, index, "quantity")} 
+          className="quantity-input w-16 text-center text-sm" 
+        />
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => onQuantityChange(index, 1)} 
+          className="w-8 h-8 p-0"
+        >
+          <Plus className="w-3 h-3" />
+        </Button>
       </div>
 
-      <div className="text-right min-w-20"><div className="space-y-1"><Input type="number" min="0" step="0.01" value={item.price} onChange={(e) => onPriceChange(index, e.target.value)} onFocus={() => setEditingPrice(index)} onBlur={() => setEditingPrice(null)} onKeyDown={(e) => handleKeyDown(e, index, "price")} className={`price-input w-20 text-center text-sm ${item.isPriceModified ? "text-warning" : ""}`} /><div className="text-xs text-muted-foreground">單價</div></div></div>
-      <div className="text-right min-w-24"><div className="font-semibold text-primary">${item.totalPrice.toLocaleString()}</div><div className="text-xs text-muted-foreground">小計</div></div>
+      {/* 價格和小計 */}
+      <div className="flex items-center gap-4 flex-shrink-0 w-full md:w-auto justify-between md:justify-start mt-2 md:mt-0">
+        <div className="text-center">
+          <div className="text-xs text-muted-foreground mb-1">單價</div>
+          <Input 
+            type="number" 
+            min="0" 
+            step="0.01" 
+            value={item.price} 
+            onChange={(e) => onPriceChange(index, e.target.value)} 
+            onFocus={() => setEditingPrice(index)} 
+            onBlur={() => setEditingPrice(null)} 
+            onKeyDown={(e) => handleKeyDown(e, index, "price")} 
+            className={`price-input w-20 text-center text-sm ${item.isPriceModified ? "text-warning" : ""}`} 
+          />
+        </div>
+        <div className="text-center">
+          <div className="text-xs text-muted-foreground mb-1">小計</div>
+          <div className="font-semibold text-primary">${item.totalPrice.toLocaleString()}</div>
+        </div>
+      </div>
     </div>
   );
 };

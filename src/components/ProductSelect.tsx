@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useStore } from "@/hooks/useStore";
 import {
   Package,
@@ -12,8 +11,19 @@ import {
   Filter,
   ChevronRight,
   ShoppingCart,
+  Grid,
+  List,
 } from "lucide-react";
 import { toast } from "sonner";
+import { MultiSelectDropdown } from "./MultiSelectDropdown";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export const ProductSelect = () => {
   const {
@@ -30,6 +40,7 @@ export const ProductSelect = () => {
   const [selectedSeries, setSelectedSeries] = useState<string[]>([]);
   const [selectedRemarks, setSelectedRemarks] = useState<string[]>([]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
   // 獲取所有唯一選項
   const uniqueVendors = useMemo(
@@ -104,19 +115,6 @@ export const ProductSelect = () => {
     setSelectedRemarks([]);
   };
 
-  // 切換選項
-  const toggleSelection = (
-    value: string,
-    selected: string[],
-    setter: (v: string[]) => void
-  ) => {
-    if (selected.includes(value)) {
-      setter(selected.filter((v) => v !== value));
-    } else {
-      setter([...selected, value]);
-    }
-  };
-
   return (
     <>
       {/* Sidebar 切換按鈕 */}
@@ -125,10 +123,10 @@ export const ProductSelect = () => {
         className="fixed top-20 right-4 z-40 shadow-lg"
         size="lg"
       >
-        <Package className="w-5 h-5 mr-2" />
-        產品選擇
+        <Package className="w-5 h-5 md:mr-2" />
+        <span className="hidden md:inline">產品選擇</span>
         <ChevronRight
-          className={`w-4 h-4 ml-2 transition-transform ${
+          className={`w-4 h-4 md:ml-2 transition-transform ${
             productSidebarOpen ? "rotate-180" : ""
           }`}
         />
@@ -182,7 +180,7 @@ export const ProductSelect = () => {
                 />
               </div>
 
-              {/* 進階篩選按鈕 */}
+              {/* 進階篩選與視圖切換 */}
               <div className="flex gap-2">
                 <Button
                   variant={showAdvancedFilters ? "default" : "outline"}
@@ -193,6 +191,24 @@ export const ProductSelect = () => {
                   <Filter className="w-4 h-4 mr-2" />
                   進階篩選
                 </Button>
+                <div className="flex gap-1 border rounded-md">
+                  <Button
+                    variant={viewMode === "grid" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("grid")}
+                    className="px-3"
+                  >
+                    <Grid className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === "table" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("table")}
+                    className="px-3"
+                  >
+                    <List className="w-4 h-4" />
+                  </Button>
+                </div>
                 {(selectedVendors.length > 0 ||
                   selectedNames.length > 0 ||
                   selectedSeries.length > 0 ||
@@ -209,110 +225,35 @@ export const ProductSelect = () => {
 
               {/* 進階篩選選項 */}
               {showAdvancedFilters && (
-                <div className="space-y-3 p-4 border rounded-lg bg-muted/30 animate-fade-in max-h-[40vh] overflow-y-auto">
-                  {/* 廠商 */}
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      廠商 ({selectedVendors.length})
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {uniqueVendors.map((vendor) => (
-                        <label
-                          key={vendor}
-                          className="flex items-center gap-2 cursor-pointer"
-                        >
-                          <Checkbox
-                            checked={selectedVendors.includes(vendor)}
-                            onCheckedChange={() =>
-                              toggleSelection(
-                                vendor,
-                                selectedVendors,
-                                setSelectedVendors
-                              )
-                            }
-                          />
-                          <span className="text-sm">{vendor}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 產品名稱 */}
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      產品名稱 ({selectedNames.length})
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {uniqueNames.map((name) => (
-                        <label
-                          key={name}
-                          className="flex items-center gap-2 cursor-pointer w-full"
-                        >
-                          <Checkbox
-                            checked={selectedNames.includes(name)}
-                            onCheckedChange={() =>
-                              toggleSelection(name, selectedNames, setSelectedNames)
-                            }
-                          />
-                          <span className="text-sm">{name}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 系列 */}
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      系列 ({selectedSeries.length})
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {uniqueSeries.map((series) => (
-                        <label
-                          key={series}
-                          className="flex items-center gap-2 cursor-pointer w-full"
-                        >
-                          <Checkbox
-                            checked={selectedSeries.includes(series)}
-                            onCheckedChange={() =>
-                              toggleSelection(
-                                series,
-                                selectedSeries,
-                                setSelectedSeries
-                              )
-                            }
-                          />
-                          <span className="text-sm">{series}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 備註 */}
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      備註 ({selectedRemarks.length})
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {uniqueRemarks.map((remark) => (
-                        <label
-                          key={remark}
-                          className="flex items-center gap-2 cursor-pointer w-full"
-                        >
-                          <Checkbox
-                            checked={selectedRemarks.includes(remark)}
-                            onCheckedChange={() =>
-                              toggleSelection(
-                                remark,
-                                selectedRemarks,
-                                setSelectedRemarks
-                              )
-                            }
-                          />
-                          <span className="text-sm">{remark}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
+                <div className="space-y-3 p-4 border rounded-lg bg-muted/30 animate-fade-in">
+                  <MultiSelectDropdown
+                    options={uniqueVendors}
+                    selected={selectedVendors}
+                    onChange={setSelectedVendors}
+                    label="廠商"
+                    placeholder="搜尋廠商..."
+                  />
+                  <MultiSelectDropdown
+                    options={uniqueNames}
+                    selected={selectedNames}
+                    onChange={setSelectedNames}
+                    label="產品名稱"
+                    placeholder="搜尋產品名稱..."
+                  />
+                  <MultiSelectDropdown
+                    options={uniqueSeries}
+                    selected={selectedSeries}
+                    onChange={setSelectedSeries}
+                    label="系列"
+                    placeholder="搜尋系列..."
+                  />
+                  <MultiSelectDropdown
+                    options={uniqueRemarks}
+                    selected={selectedRemarks}
+                    onChange={setSelectedRemarks}
+                    label="備註"
+                    placeholder="搜尋備註..."
+                  />
                 </div>
               )}
             </div>
@@ -325,7 +266,7 @@ export const ProductSelect = () => {
                   <p className="text-lg">沒有符合的產品</p>
                   <p className="text-sm">請調整搜尋或篩選條件</p>
                 </div>
-              ) : (
+              ) : viewMode === "grid" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
                   {filteredProducts.map((product) => (
                     <Card
@@ -364,6 +305,54 @@ export const ProductSelect = () => {
                       </CardContent>
                     </Card>
                   ))}
+                </div>
+              ) : (
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>廠商</TableHead>
+                        <TableHead>名稱</TableHead>
+                        <TableHead>系列</TableHead>
+                        <TableHead>備註</TableHead>
+                        <TableHead>代碼</TableHead>
+                        <TableHead className="text-right">價格</TableHead>
+                        <TableHead className="text-right">操作</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredProducts.map((product) => (
+                        <TableRow key={product.id} className="cursor-pointer hover:bg-muted/50">
+                          <TableCell className="font-medium">{product.vendor}</TableCell>
+                          <TableCell>{product.name}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {product.series}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {product.remark}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">
+                              {product.code}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-bold text-primary">
+                            ${product.price}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleSelectProduct(product)}
+                            >
+                              <ShoppingCart className="w-4 h-4 mr-1" />
+                              加入
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </div>

@@ -5,7 +5,7 @@ import { ProductSelect } from "@/components/ProductSelect";
 import { SalesProductList } from "@/components/SalesProductList";
 import { useStore } from "@/hooks/useStore";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Users, ShoppingCart, Package, X } from "lucide-react";
 
 const Index = () => {
   const {
@@ -31,8 +31,8 @@ const Index = () => {
     setProductSidebarOpen,
   } = useStore();
   
-  const [isMobile] = useState(() => window.innerWidth < 768);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const [activeComponent, setActiveComponent] = useState<string | null>(null);
 
   // 檢查是否有未完成的資料
   useEffect(() => {
@@ -53,45 +53,10 @@ const Index = () => {
     setShowRestoreDialog(false);
   };
 
-  // 移動端展開組件控制
-  const handleExpandComponent = (component: string) => {
-    if (isMobile) {
-      setExpandedComponent(expandedComponent === component ? null : component);
-    }
-  };
-
   // 關閉成功模態框並清空資料
   const handleCloseSuccessModal = () => {
     setShowSuccessModal(false);
     clearAll();
-  };
-
-  // 響應式網格類別
-  const getGridClasses = () => {
-    if (isMobile && expandedComponent) {
-      return "grid grid-cols-1 gap-4 min-h-screen";
-    }
-    return "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-min max-w-screen-2xl mx-auto";
-  };
-
-  // 組件顯示邏輯（移動端）
-  const shouldShowComponent = (component: string) => {
-    if (!isMobile) return true;
-    if (!expandedComponent) return true;
-    return expandedComponent === component;
-  };
-
-  // 組件樣式類別
-  const getComponentClasses = (component: string) => {
-    const baseClasses = "transition-all duration-300";
-    
-    if (isMobile && expandedComponent) {
-      return expandedComponent === component 
-        ? `${baseClasses} col-span-1`
-        : "hidden";
-    }
-    
-    return baseClasses;
   };
 
   return (
@@ -100,77 +65,91 @@ const Index = () => {
         {/* 頂部標題列 */}
         <StoreHeader />
 
-        {/* 移動端組件選擇器 */}
-        {isMobile && !expandedComponent && (
-          <div className="grid grid-cols-1 gap-4 mb-6">
-            <Card
-              onClick={() => handleExpandComponent("customer")}
-              className="p-6 cursor-pointer hover:shadow-md transition-shadow"
-            >
-              <div className="font-semibold">客戶資訊</div>
-              <div className="text-sm text-muted-foreground">
-                選擇客戶並設定訂單資訊
-              </div>
-            </Card>
-
-            <Card
-              onClick={() => setProductSidebarOpen(true)}
-              className="p-6 cursor-pointer hover:shadow-md transition-shadow"
-            >
-              <div className="font-semibold">產品選擇</div>
-              <div className="text-sm text-muted-foreground">
-                瀏覽並選擇要銷售的產品
-              </div>
-            </Card>
-
-            <Card
-              onClick={() => handleExpandComponent("sales")}
-              className="p-6 cursor-pointer hover:shadow-md transition-shadow"
-            >
-              <div className="font-semibold">銷售清單</div>
-              <div className="text-sm text-muted-foreground">
-                管理選中的商品和數量
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {/* 返回按鈕（移動端展開狀態） */}
-        {isMobile && expandedComponent && (
-          <Button
-            variant="ghost"
-            onClick={() => setExpandedComponent(null)}
-            className="mb-4"
-          >
-            ← 返回主選單
-          </Button>
-        )}
-
         {/* 主要內容區域 */}
-        <div className={getGridClasses()}>
-          {/* 客戶選擇組件 */}
-          {shouldShowComponent("customer") && (
-            <div className={`${getComponentClasses("customer")} xl:col-span-1`}>
-              <Card
-                onClick={() => isMobile && handleExpandComponent("customer")}
-                className={isMobile && !expandedComponent ? "cursor-pointer" : ""}
-              >
-                <CustomerSelect />
-              </Card>
-            </div>
-          )}
+        <div className="space-y-6">
+          {/* 桌面版：顯示所有組件 */}
+          <div className="hidden md:grid md:grid-cols-2 gap-6 max-w-screen-2xl mx-auto">
+            <CustomerSelect />
+            <SalesProductList />
+          </div>
 
-          {/* 銷售清單組件 */}
-          {shouldShowComponent("sales") && (
-            <div className={`${getComponentClasses("sales")} xl:col-span-1`}>
-              <Card
-                onClick={() => isMobile && handleExpandComponent("sales")}
-                className={isMobile && !expandedComponent ? "cursor-pointer" : ""}
-              >
+          {/* 手機版：根據選擇顯示組件 */}
+          <div className="md:hidden space-y-4">
+            {activeComponent === null && (
+              <div className="grid grid-cols-3 gap-4">
+                <Card
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                >
+                  <CardHeader 
+                    className="pb-4 cursor-pointer"
+                    onClick={() => setActiveComponent("customer")}
+                  >
+                    <CardTitle className="flex flex-col items-center gap-2 text-center">
+                      <Users className="w-8 h-8" />
+                      <span className="text-sm whitespace-pre-line leading-tight">
+                        {"客\n戶\n資\n訊"}
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                </Card>
+                <Card
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                >
+                  <CardHeader 
+                    className="pb-4 cursor-pointer"
+                    onClick={() => setActiveComponent("sales")}
+                  >
+                    <CardTitle className="flex flex-col items-center gap-2 text-center">
+                      <ShoppingCart className="w-8 h-8" />
+                      <span className="text-sm whitespace-pre-line leading-tight">
+                        {"銷\n售\n清\n單"}
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                </Card>
+                <Card
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                >
+                  <CardHeader 
+                    className="pb-4 cursor-pointer"
+                    onClick={() => setProductSidebarOpen(true)}
+                  >
+                    <CardTitle className="flex flex-col items-center gap-2 text-center">
+                      <Package className="w-8 h-8" />
+                    </CardTitle>
+                  </CardHeader>
+                </Card>
+              </div>
+            )}
+
+            {activeComponent === "customer" && (
+              <div className="animate-fade-in">
+                <Button
+                  variant="outline"
+                  onClick={() => setActiveComponent(null)}
+                  className="mb-4"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  返回
+                </Button>
+                <CustomerSelect />
+              </div>
+            )}
+
+            {activeComponent === "sales" && (
+              <div className="animate-fade-in">
+                <Button
+                  variant="outline"
+                  onClick={() => setActiveComponent(null)}
+                  className="mb-4"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  返回
+                </Button>
                 <SalesProductList />
-              </Card>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 產品選擇 Sidebar */}

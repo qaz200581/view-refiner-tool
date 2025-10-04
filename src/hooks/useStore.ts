@@ -63,7 +63,7 @@ interface StoreState {
   setSelectedCustomer: (customer: Customer | null) => void;
   setProducts: (products: Product[]) => void;
   addSelectedProduct: (product: Product) => void;
-  removeSelectedProduct: (productId: string) => void;
+  removeSelectedProduct: (productId: number) => void;
   
   // 銷售清單操作
   addSalesItem: (product: Product, quantity?: number) => void;
@@ -167,7 +167,7 @@ export const useStore = create<StoreState>()(
         }
       },
       
-      removeSelectedProduct: (productId) => {
+      removeSelectedProduct: (productId: number) => {
         const { selectedProducts } = get();
         set({ selectedProducts: selectedProducts.filter(p => p.id !== productId) });
       },
