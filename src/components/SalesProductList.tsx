@@ -102,7 +102,7 @@ const SortableItem = ({
   }, [products, item.vendor, item.name, item.series]);
 
   return (
-    <div ref={setNodeRef} style={style} className="flex flex-col md:flex-row items-start md:items-center gap-3 p-4 border rounded-lg bg-surface hover:shadow-md transition-shadow">
+    <div ref={setNodeRef} style={style} className="flex flex-col md:flex-row items-start md:items-center gap-3 p-4 border rounded-lg bg-surface hover:shadow-md transition-shadow touch-none">
       {/* 操作按鈕 */}
       <div className="flex items-center gap-2 flex-shrink-0">
         <Button variant="ghost" size="icon" className="cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>

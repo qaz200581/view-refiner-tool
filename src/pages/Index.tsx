@@ -68,7 +68,7 @@ const Index = () => {
         {/* 主要內容區域 */}
         <div className="space-y-6">
           {/* 桌面版：顯示所有組件 */}
-          <div className="hidden md:grid md:grid-cols-2 gap-6 max-w-screen-2xl mx-auto">
+          <div className="hidden md:grid md:grid-rows-2 gap-6 max-w-screen-2xl mx-auto">
             <CustomerSelect />
             <SalesProductList />
           </div>
@@ -76,7 +76,7 @@ const Index = () => {
           {/* 手機版：根據選擇顯示組件 */}
           <div className="md:hidden space-y-4">
             {activeComponent === null && (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-rows-3 gap-4">
                 <Card
                   className="cursor-pointer hover:shadow-lg transition-shadow"
                 >

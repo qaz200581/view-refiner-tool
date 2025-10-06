@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,16 @@ export const ProductSelect = () => {
     selectedCustomer,
     productSidebarOpen,
     setProductSidebarOpen,
+    loadProductsFromApi,
+    isLoadingProducts,
   } = useStore();
+  
+  // 初次載入時從 API 獲取產品（如果產品列表為空）
+  useEffect(() => {
+    if (products.length === 0) {
+      loadProductsFromApi();
+    }
+  }, []);
 
   const [quickSearch, setQuickSearch] = useState("");
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
@@ -42,23 +51,44 @@ export const ProductSelect = () => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
-  // 獲取所有唯一選項
+  // 獲取所有唯一選項（根據已選篩選條件進行關聯過濾）
   const uniqueVendors = useMemo(
     () => Array.from(new Set(products.map((p) => p.vendor))),
     [products]
   );
-  const uniqueNames = useMemo(
-    () => Array.from(new Set(products.map((p) => p.name))),
-    [products]
-  );
-  const uniqueSeries = useMemo(
-    () => Array.from(new Set(products.map((p) => p.series))),
-    [products]
-  );
-  const uniqueRemarks = useMemo(
-    () => Array.from(new Set(products.map((p) => p.remark))),
-    [products]
-  );
+  
+  const uniqueNames = useMemo(() => {
+    let filtered = products;
+    if (selectedVendors.length > 0) {
+      filtered = filtered.filter(p => selectedVendors.includes(p.vendor));
+    }
+    return Array.from(new Set(filtered.map((p) => p.name)));
+  }, [products, selectedVendors]);
+  
+  const uniqueSeries = useMemo(() => {
+    let filtered = products;
+    if (selectedVendors.length > 0) {
+      filtered = filtered.filter(p => selectedVendors.includes(p.vendor));
+    }
+    if (selectedNames.length > 0) {
+      filtered = filtered.filter(p => selectedNames.includes(p.name));
+    }
+    return Array.from(new Set(filtered.map((p) => p.series)));
+  }, [products, selectedVendors, selectedNames]);
+  
+  const uniqueRemarks = useMemo(() => {
+    let filtered = products;
+    if (selectedVendors.length > 0) {
+      filtered = filtered.filter(p => selectedVendors.includes(p.vendor));
+    }
+    if (selectedNames.length > 0) {
+      filtered = filtered.filter(p => selectedNames.includes(p.name));
+    }
+    if (selectedSeries.length > 0) {
+      filtered = filtered.filter(p => selectedSeries.includes(p.series));
+    }
+    return Array.from(new Set(filtered.map((p) => p.remark)));
+  }, [products, selectedVendors, selectedNames, selectedSeries]);
 
   // 篩選產品
   const filteredProducts = useMemo(() => {
@@ -120,13 +150,15 @@ export const ProductSelect = () => {
       {/* Sidebar 切換按鈕 */}
       <Button
         onClick={() => setProductSidebarOpen(!productSidebarOpen)}
-        className="fixed top-20 right-4 z-40 shadow-lg"
+        className="fixed top-20 right-2 md:right-4 z-40 shadow-lg flex flex-col items-center justify-center py-3 px-2 md:px-4 h-auto"
         size="lg"
       >
-        <Package className="w-5 h-5 md:mr-2" />
-        <span className="hidden md:inline">產品選擇</span>
+        <Package className="w-5 h-5 mb-1" />
+        <span className="hidden md:inline [writing-mode:vertical-rl] rotate-180 leading-none tracking-tight text-xs">
+          產品選擇
+        </span>
         <ChevronRight
-          className={`w-4 h-4 md:ml-2 transition-transform ${
+          className={`w-4 h-4 mt-1 transition-transform ${
             productSidebarOpen ? "rotate-180" : ""
           }`}
         />
@@ -142,7 +174,7 @@ export const ProductSelect = () => {
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-full w-full md:w-[90vw] lg:w-[85vw] xl:w-[80vw] bg-background border-l shadow-2xl z-50 transform transition-transform duration-300 ${
+        className={`fixed top-0 right-0 h-full w-[85vw] md:w-[90vw] lg:w-[85vw] xl:w-[80vw] bg-background border-l shadow-2xl z-50 transform transition-transform duration-300 ${
           productSidebarOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
@@ -260,7 +292,13 @@ export const ProductSelect = () => {
 
             {/* 產品列表 */}
             <div className="flex-1 overflow-auto">
-              {filteredProducts.length === 0 ? (
+              {isLoadingProducts ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Package className="w-16 h-16 mx-auto mb-4 opacity-50 animate-pulse" />
+                  <p className="text-lg">載入中...</p>
+                  <p className="text-sm">正在從資料庫獲取產品資訊</p>
+                </div>
+              ) : filteredProducts.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Package className="w-16 h-16 mx-auto mb-4 opacity-50" />
                   <p className="text-lg">沒有符合的產品</p>

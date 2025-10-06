@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { fetchProducts, GoogleSheetsProduct } from '@/services/googleSheetsApi';
 
 // 類型定義
 export interface Customer {
@@ -89,6 +90,10 @@ interface StoreState {
   getTotalQuantity: () => number;
   getTotalAmount: () => number;
   getProductPrice: (productCode: string) => number;
+  
+  // API 相關
+  loadProductsFromApi: () => Promise<void>;
+  isLoadingProducts: boolean;
 }
 
 export const useStore = create<StoreState>()(
@@ -139,6 +144,7 @@ export const useStore = create<StoreState>()(
       expandedComponent: null,
       showSuccessModal: false,
       productSidebarOpen: false,
+      isLoadingProducts: false,
 
       // Actions
       setCustomers: (customers) => set({ customers }),
@@ -262,6 +268,31 @@ export const useStore = create<StoreState>()(
         // 這裡可以實現客戶專屬價格邏輯
         // 目前先返回原價
         return product.originalPrice || product.price;
+      },
+      
+      // 從 API 載入產品
+      loadProductsFromApi: async () => {
+        set({ isLoadingProducts: true });
+        try {
+          const apiProducts = await fetchProducts();
+          
+          // 轉換 API 產品數據為應用產品格式
+          const formattedProducts: Product[] = apiProducts.map((p, index) => ({
+            id: index + 1,
+            code: p.code,
+            name: p.name,
+            series: p.seriesList,
+            vendor: p.brand,
+            remark: p.colors,
+            price: 1290, // 預設價格，可根據實際需求調整
+            state: p.status === '啟用中' ? '啟用中' : '停用',
+          }));
+          
+          set({ products: formattedProducts, isLoadingProducts: false });
+        } catch (error) {
+          console.error('Failed to load products from API:', error);
+          set({ isLoadingProducts: false });
+        }
       },
     }),
     {
