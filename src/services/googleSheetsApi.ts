@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbw35vDuBQego2Prp9RlX_rFDVvI1GkSWCawO3ueDt5W8IY1aesGnWHQUFnEdJSn8Ynt/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycby3cWi_ZuxBzxAuEBi8A0XTpQ-xqf_kb397TrJ3x32u3U9nbr4OwrbZDY2uJJCttQ1s/exec";
 
 export interface GoogleSheetsProduct {
   productId: string;
@@ -10,6 +10,9 @@ export interface GoogleSheetsProduct {
   modelList: string;
   colors: string;
   rowNumber: number;
+  tableTitle: string;
+  tableRowTitle: string;
+  tableColTitle: string;
 }
 
 export interface GoogleSheetsSale {
@@ -50,18 +53,16 @@ interface ApiResponse {
     products?: GoogleSheetsProduct[];
     sales?: GoogleSheetsSale[];
     orders?: GoogleSheetsOrder[];
+    customers?: GoogleSheetsCustomer[];
   };
   error?: string;
 }
 
-export const fetchGoogleSheetsData = async (type: 'products' | 'sales' | 'orders' | 'all' = 'all'): Promise<ApiResponse> => {
+export const fetchGoogleSheetsData = async (type: 'products' | 'sales' | 'orders' | 'customers' | 'all' = 'all'): Promise<ApiResponse> => {
   try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ type }),
+    const url = `${API_URL}?type=${type}`;
+    const response = await fetch(url, {
+      method: 'GET',
     });
 
     if (!response.ok) {
@@ -93,3 +94,19 @@ export const fetchOrders = async (): Promise<GoogleSheetsOrder[]> => {
   const response = await fetchGoogleSheetsData('orders');
   return response.data?.orders || [];
 };
+
+export const fetchCustomers = async (): Promise<GoogleSheetsCustomer[]> => {
+  const response = await fetchGoogleSheetsData('customers');
+  return response.data?.customers || [];
+};
+
+// 客戶資料介面
+export interface GoogleSheetsCustomer {
+  state: string;
+  customerCode: string;
+  customerName: string;
+  storeName: string;
+  chainStoreName: string;
+  arCutoffDate: string | number;
+  rowNumber: number;
+}

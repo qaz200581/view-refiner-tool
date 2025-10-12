@@ -1,40 +1,20 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
 import { useStore, Customer } from "@/hooks/useStore";
 import { User, Calendar, FileText, Store } from "lucide-react";
 import { toast } from "sonner";
 
-// 模擬客戶資料
-const mockCustomers: Customer[] = [
-  {
-    id: "c1", name: "王小明", code: "C001", storeName: "小明便利商店", chainStoreName: "7-ELEVEN"
-  },
-  {
-    id: "c2", name: "李美華", code: "C002", storeName: "美華雜貨店", chainStoreName: "全家便利商店"
-  },
-  {
-    id: "c3", name: "張志強", code: "C003", storeName: "志強超市", chainStoreName: ""
-  },
-  {
-    id: "c4", name: "陳雅婷", code: "C004", storeName: "雅婷商行", chainStoreName: "萊爾富"
-  },
-  {
-    id: "c5", name: "林大山", code: "C005", storeName: "大山食品行", chainStoreName: ""
-  },
-];
-
 export const CustomerSelect = () => {
   const {
     customers,
-    setCustomers,
     selectedCustomer,
     setSelectedCustomer,
     orderInfo,
     updateOrderInfo,
+    isLoadingCustomers,
   } = useStore();
 
   const [showStoreDetails, setShowStoreDetails] = useState(false);
@@ -56,13 +36,6 @@ export const CustomerSelect = () => {
     chainStoreName: [],
   });
   const [activeField, setActiveField] = useState("");
-
-  // 初始化客戶資料
-  useMemo(() => {
-    if (customers.length === 0) {
-      setCustomers(mockCustomers);
-    }
-  }, [customers.length, setCustomers]);
 
   // 當選擇的客戶改變時，更新表單
   useEffect(() => {
@@ -234,6 +207,12 @@ export const CustomerSelect = () => {
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {isLoadingCustomers && (
+          <div className="text-center py-4 text-muted-foreground">
+            載入客戶資料中...
+          </div>
+        )}
+        
         {/* 日期和流水號 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">

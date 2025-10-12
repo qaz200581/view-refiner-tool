@@ -1,29 +1,19 @@
 import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useStore } from "@/hooks/useStore";
 import {
   Package,
-  Search,
   X,
-  Filter,
   ChevronRight,
-  ShoppingCart,
   Grid,
   List,
 } from "lucide-react";
 import { toast } from "sonner";
-import { MultiSelectDropdown } from "./MultiSelectDropdown";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { ProductSearchFilters } from "./ProductSearchFilters";
+import { ProductGridView } from "./ProductGridView";
+import { ProductTableView } from "./ProductTableView";
 
 export const ProductSelect = () => {
   const {
@@ -127,13 +117,13 @@ export const ProductSelect = () => {
   ]);
 
   // 處理選擇產品
-  const handleSelectProduct = (product: any) => {
+  const handleSelectProduct = (product: any, quantity: number = 1) => {
     if (!selectedCustomer) {
       toast.error("請先在「客戶資訊」區域選擇客戶");
       return;
     }
-    addSalesItem(product);
-    toast.success(`已添加 ${product.name}`);
+    addSalesItem(product, quantity);
+    toast.success(`已添加 ${quantity} x ${product.name}`);
   };
 
   // 清除所有篩選
@@ -154,7 +144,7 @@ export const ProductSelect = () => {
         size="lg"
       >
         <Package className="w-5 h-5 mb-1" />
-        <span className="hidden md:inline [writing-mode:vertical-rl] rotate-180 leading-none tracking-tight text-xs">
+        <span className="hidden md:inline [writing-mode:vertical-rl] rotate-360 leading-none tracking-tight text-x">
           產品選擇
         </span>
         <ChevronRight
@@ -201,93 +191,45 @@ export const ProductSelect = () => {
           <CardContent className="flex-1 overflow-hidden flex flex-col p-6">
             {/* 搜尋與篩選 */}
             <div className="space-y-4 mb-4 flex-shrink-0">
-              {/* 快速搜尋 */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  placeholder="快速搜尋產品..."
-                  value={quickSearch}
-                  onChange={(e) => setQuickSearch(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+              <ProductSearchFilters
+                quickSearch={quickSearch}
+                setQuickSearch={setQuickSearch}
+                showAdvancedFilters={showAdvancedFilters}
+                setShowAdvancedFilters={setShowAdvancedFilters}
+                selectedVendors={selectedVendors}
+                setSelectedVendors={setSelectedVendors}
+                selectedNames={selectedNames}
+                setSelectedNames={setSelectedNames}
+                selectedSeries={selectedSeries}
+                setSelectedSeries={setSelectedSeries}
+                selectedRemarks={selectedRemarks}
+                setSelectedRemarks={setSelectedRemarks}
+                uniqueVendors={uniqueVendors}
+                uniqueNames={uniqueNames}
+                uniqueSeries={uniqueSeries}
+                uniqueRemarks={uniqueRemarks}
+                clearAllFilters={clearAllFilters}
+              />
 
-              {/* 進階篩選與視圖切換 */}
-              <div className="flex gap-2">
+              {/* 視圖切換 */}
+              <div className="flex gap-1 border rounded-md w-fit">
                 <Button
-                  variant={showAdvancedFilters ? "default" : "outline"}
+                  variant={viewMode === "grid" ? "default" : "ghost"}
                   size="sm"
-                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  className="flex-1"
+                  onClick={() => setViewMode("grid")}
+                  className="px-3"
                 >
-                  <Filter className="w-4 h-4 mr-2" />
-                  進階篩選
+                  <Grid className="w-4 h-4" />
                 </Button>
-                <div className="flex gap-1 border rounded-md">
-                  <Button
-                    variant={viewMode === "grid" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setViewMode("grid")}
-                    className="px-3"
-                  >
-                    <Grid className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === "table" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setViewMode("table")}
-                    className="px-3"
-                  >
-                    <List className="w-4 h-4" />
-                  </Button>
-                </div>
-                {(selectedVendors.length > 0 ||
-                  selectedNames.length > 0 ||
-                  selectedSeries.length > 0 ||
-                  selectedRemarks.length > 0) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={clearAllFilters}
-                  >
-                    清除篩選
-                  </Button>
-                )}
+                <Button
+                  variant={viewMode === "table" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("table")}
+                  className="px-3"
+                >
+                  <List className="w-4 h-4" />
+                </Button>
               </div>
-
-              {/* 進階篩選選項 */}
-              {showAdvancedFilters && (
-                <div className="space-y-3 p-4 border rounded-lg bg-muted/30 animate-fade-in">
-                  <MultiSelectDropdown
-                    options={uniqueVendors}
-                    selected={selectedVendors}
-                    onChange={setSelectedVendors}
-                    label="廠商"
-                    placeholder="搜尋廠商..."
-                  />
-                  <MultiSelectDropdown
-                    options={uniqueNames}
-                    selected={selectedNames}
-                    onChange={setSelectedNames}
-                    label="產品名稱"
-                    placeholder="搜尋產品名稱..."
-                  />
-                  <MultiSelectDropdown
-                    options={uniqueSeries}
-                    selected={selectedSeries}
-                    onChange={setSelectedSeries}
-                    label="系列"
-                    placeholder="搜尋系列..."
-                  />
-                  <MultiSelectDropdown
-                    options={uniqueRemarks}
-                    selected={selectedRemarks}
-                    onChange={setSelectedRemarks}
-                    label="備註"
-                    placeholder="搜尋備註..."
-                  />
-                </div>
-              )}
             </div>
 
             {/* 產品列表 */}
@@ -305,93 +247,15 @@ export const ProductSelect = () => {
                   <p className="text-sm">請調整搜尋或篩選條件</p>
                 </div>
               ) : viewMode === "grid" ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
-                  {filteredProducts.map((product) => (
-                    <Card
-                      key={product.id}
-                      className="hover:shadow-lg transition-shadow cursor-pointer"
-                      onClick={() => handleSelectProduct(product)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="space-y-2">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-sm">
-                                {product.vendor} • {product.name}
-                              </h4>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {product.series}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {product.remark}
-                              </p>
-                            </div>
-                            <Badge variant="outline" className="text-xs">
-                              {product.code}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center justify-between pt-2 border-t">
-                            <span className="text-lg font-bold text-primary">
-                              ${product.price}
-                            </span>
-                            <Button size="sm" variant="secondary">
-                              <ShoppingCart className="w-4 h-4 mr-1" />
-                              加入
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                <ProductGridView
+                  products={filteredProducts}
+                  onSelectProduct={handleSelectProduct}
+                />
               ) : (
-                <div className="border rounded-lg overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>廠商</TableHead>
-                        <TableHead>名稱</TableHead>
-                        <TableHead>系列</TableHead>
-                        <TableHead>備註</TableHead>
-                        <TableHead>代碼</TableHead>
-                        <TableHead className="text-right">價格</TableHead>
-                        <TableHead className="text-right">操作</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredProducts.map((product) => (
-                        <TableRow key={product.id} className="cursor-pointer hover:bg-muted/50">
-                          <TableCell className="font-medium">{product.vendor}</TableCell>
-                          <TableCell>{product.name}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {product.series}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {product.remark}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs">
-                              {product.code}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right font-bold text-primary">
-                            ${product.price}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => handleSelectProduct(product)}
-                            >
-                              <ShoppingCart className="w-4 h-4 mr-1" />
-                              加入
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                <ProductTableView
+                  products={filteredProducts}
+                  onSelectProduct={handleSelectProduct}
+                />
               )}
             </div>
           </CardContent>
