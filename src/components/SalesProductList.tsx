@@ -92,13 +92,13 @@ const SortableItem = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const seriesForProduct = useMemo(() => {
-    return Array.from(new Set(products.filter(p => p.vendor === item.vendor && p.name === item.name).map(p => p.series)));
+  const modelForProduct = useMemo(() => {
+    return Array.from(new Set(products.filter(p => p.vendor === item.vendor && p.series === item.series).map(p => p.model)));
   }, [products, item.vendor, item.name]);
 
   const remarksForSeries = useMemo(() => {
     if (!item.series) return [];
-    return Array.from(new Set(products.filter(p => p.vendor === item.vendor && p.name === item.name && p.series === item.series).map(p => p.remark)));
+    return Array.from(new Set(products.filter(p => p.vendor === item.vendor && p.series === item.series && p.model === item.model).map(p => p.remark)));
   }, [products, item.vendor, item.name, item.series]);
 
   return (
@@ -125,19 +125,19 @@ const SortableItem = ({
         <div className="md:hidden space-y-2">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <h4 className="font-medium text-sm">{item.vendor} • {item.name}</h4>
+              <h4 className="font-medium text-sm">{item.vendor} • {item.series}</h4>
               <Badge variant="outline" className="text-xs mt-1">{item.code}</Badge>
             </div>
           </div>
           
           <div className="space-y-1">
-            {seriesForProduct.length > 0 ? (
-              <Select value={item.series} onValueChange={(v) => onSeriesChange(index, v)}>
+            {modelForProduct.length > 0 ? (
+              <Select value={item.model} onValueChange={(v) => onSeriesChange(index, v)}>
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {seriesForProduct.map(s => (
+                  {modelForProduct.map(s => (
                     <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
                   ))}
                 </SelectContent>
@@ -167,15 +167,15 @@ const SortableItem = ({
         <div className="hidden md:block">
           <div className="flex items-start justify-between gap-4 mb-2">
             <div className="flex-1 min-w-0">
-              <h4 className="font-medium text-sm mb-2">{item.vendor} • {item.name}</h4>
+              <h4 className="font-medium text-sm mb-2">{item.vendor} • {item.series}</h4>
               <div className="flex items-center gap-2 flex-wrap">
-                {seriesForProduct.length > 0 ? (
-                  <Select value={item.series} onValueChange={(v) => onSeriesChange(index, v)}>
+                {modelForProduct.length > 0 ? (
+                  <Select value={item.model} onValueChange={(v) => onSeriesChange(index, v)}>
                     <SelectTrigger className="h-7 text-xs w-auto min-w-[200px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {seriesForProduct.map(s => (
+                      {modelForProduct.map(s => (
                         <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
                       ))}
                     </SelectContent>
@@ -207,6 +207,7 @@ const SortableItem = ({
 
       {/* 數量控制 */}
       <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="text-xs text-muted-foreground mb-1">數量</div>
         <Button 
           variant="outline" 
           size="sm" 

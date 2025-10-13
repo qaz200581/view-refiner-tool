@@ -19,6 +19,7 @@ export interface Product {
   vendor: string;
   remark: string;
   price: number;
+  model: string;
   originalPrice?: number;
   state?: '啟用中' | '停用' | '預購中' | '售完停產';
   barcode?: string;
@@ -260,9 +261,10 @@ export const useStore = create<StoreState>()(
             series: p.seriesList,
             vendor: p.brand,
             remark: p.colors,
+            model: p.model,
             tableTitle: p.tableTitle,
-            talbeRowTitle: p.tableRowTitle,
-            talbeColTitle: p.tableColTitle,
+            tableRowTitle: p.tableRowTitle,
+            tableColTitle: p.tableColTitle,
             price: 1290, // 預設價格，可根據實際需求調整
             state: p.status === '啟用中' ? '啟用中' : '停用',
           }));

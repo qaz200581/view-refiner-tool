@@ -7,6 +7,7 @@ interface Product {
   id: number;
   code: string;
   vendor: string;
+  model: string;
   name: string;
   series: string;
   remark: string;
@@ -34,13 +35,13 @@ export const ProductGridView = ({
             <div className="space-y-2">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h4 className="font-medium text-sm">
-                    {product.vendor} • {product.name}
+                  <h4 className="font-medium text-xs">
+                    {product.vendor} • {product.series}
                   </h4>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {product.series}
+                  <p className="text-s font-bold text-muted-foreground mt-1">
+                    {product.model}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     {product.remark}
                   </p>
                 </div>

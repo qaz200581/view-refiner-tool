@@ -19,9 +19,9 @@ interface Product {
   series: string;
   remark: string;
   price: number;
-  tableTitle?: string;      // 表格標題
-  tableRowTitle?: string;   // 列 (row)
-  tableColTitle?: string;   // 欄 (column)
+  tableTitle?: string; // 表格標題，可能包含多個值以逗號分隔
+  tableRowTitle?: string; // 列 (row)，可能包含多個值以逗號分隔
+  tableColTitle?: string; // 欄 (column)，可能包含多個值以逗號分隔
 }
 
 interface ProductTableViewProps {
@@ -36,9 +36,9 @@ interface GroupedProduct {
   remark: string;
   price: number;
   productId: number;
-  tableTitle: string;
-  tableRowTitle: string;
-  tableColTitle: string;
+  tableTitle: string; // 改為陣列以儲存多個 tableTitle
+  tableRowTitle: string; // 改為陣列以儲存多個 tableRowTitle
+  tableColTitle: string; // 改為陣列以儲存多個 tableColTitle
 }
 
 export const ProductTableView = ({
@@ -48,40 +48,44 @@ export const ProductTableView = ({
   const [showAsButton, setShowAsButton] = useState(true);
   const [editableData, setEditableData] = useState<Record<string, string>>({});
 
-  // 按 tableTitle 分組產品
+  // 按 tableTitle 分組產品，支援多值 tableTitle
   const groupedProducts = useMemo(() => {
     const grouped: Record<string, GroupedProduct[]> = {};
 
     products.forEach((product) => {
-      const key = product.tableTitle || "未分類";
-      if (!grouped[key]) grouped[key] = [];
-      if (!key) return;
-      grouped[key].push({
-        code: product.code,
-        series: product.series,
-        vendor: product.vendor,
-        remark: product.remark,
-        price: product.price,
-        tableTitle: product.tableTitle || "未分類",
-        tableRowTitle: product.tableRowTitle || "",
-        tableColTitle: product.tableColTitle || "",
-        productId: product.id,
-      });
-      
+      const titles = product.tableTitle?.split(",").map((t) => t.trim()) || [];
+      const colTitles = product.tableColTitle?.split(",").map((r) => r.trim()) || [];
+      if (!titles.length) return;
+      for (let i=0; i < titles.length; i++) {
+        const title = titles[i];
+        const colTitle = colTitles[i];
+        if (!grouped[title]) grouped[title] = [];
+        grouped[title].push({
+          code: product.code,
+          series: product.series,
+          vendor: product.vendor,
+          remark: product.remark,
+          price: product.price,
+          productId: product.id,
+          tableTitle: title,
+          tableRowTitle: product.tableRowTitle,
+          tableColTitle: colTitle,
+        });
+      }
     });
 
     return grouped;
   }, [products]);
 
-  // 橫向欄位：表格第一列
+  // 橫向欄位：表格第一列，支援多值 tableColTitle
   const getUniqueCols = (products: GroupedProduct[]) =>
-    [...new Set(products.map((p) => p.tableColTitle))];
+    [...new Set(products.flatMap((p) => p.tableColTitle))].filter(Boolean);
 
-  // 縱向欄位：表格第一欄
+  // 縱向欄位：表格第一欄，支援多值 tableRowTitle
   const getUniqueRows = (products: GroupedProduct[]) =>
-    [...new Set(products.map((p) => p.tableRowTitle))];
+    [...new Set(products.flatMap((p) => p.tableRowTitle))].filter(Boolean);
 
-  // 取得某格對應產品
+  // 取得某格對應產品，支援多值 tableRowTitle 和 tableColTitle
   const getCellProduct = (
     tableTitle: string,
     row: string,
@@ -89,14 +93,16 @@ export const ProductTableView = ({
   ): GroupedProduct | null => {
     return (
       groupedProducts[tableTitle]?.find(
-        (p) => p.tableRowTitle === row && p.tableColTitle === col
+        (p) =>
+          p.tableRowTitle.includes(row) &&
+          (col ? p.tableColTitle.includes(col) : p.tableColTitle.length === 0)
       ) || null
     );
   };
 
   // 點擊按鈕加入單項
-  const handleButtonClick = (code: string) => {
-    const product = products.find((item) => item.code === code);
+  const handleButtonClick = (productId: number) => {
+    const product = products.find((item) => item.id === productId);
     if (product) {
       onSelectProduct(product, 1);
     }
@@ -105,10 +111,10 @@ export const ProductTableView = ({
   // 批量確認加入
   const submitToList = () => {
     let count = 0;
-    Object.entries(editableData).forEach(([productCode, value]) => {
+    Object.entries(editableData).forEach(([productId, value]) => {
       const qty = parseInt(value);
       if (value && !isNaN(qty) && qty > 0) {
-        const product = products.find((item) => item.code === productCode);
+        const product = products.find((item) => item.id === parseInt(productId));
         if (product) {
           onSelectProduct(product, qty);
           count++;
@@ -125,8 +131,8 @@ export const ProductTableView = ({
   };
 
   // 更新輸入數量
-  const handleInputChange = (code: string, value: string) => {
-    setEditableData((prev) => ({ ...prev, [code]: value }));
+  const handleInputChange = (productId: string, value: string) => {
+    setEditableData((prev) => ({ ...prev, [productId]: value }));
   };
 
   return (
@@ -179,37 +185,77 @@ export const ProductTableView = ({
                       <TableCell className="border font-medium text-center">
                         {row}
                       </TableCell>
-                      {cols.map((col) => {
-                        const product = getCellProduct(tableTitle, row, col);
-                        return (
-                          <TableCell key={col} className="border text-center">
-                            {product ? (
-                              showAsButton ? (
-                                <Button
-                                  size="sm"
-                                  variant="default"
-                                  onClick={() => handleButtonClick(product.code)}
-                                  className="w-full"
-                                >
-                                  {product.price}
-                                </Button>
+                      {cols.length > 0 ? (
+                        cols.map((col) => {
+                          const product = getCellProduct(tableTitle, row, col);
+                          return (
+                            <TableCell key={col} className="border text-center">
+                              {product ? (
+                                showAsButton ? (
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => handleButtonClick(product.productId)}
+                                    className="w-full"
+                                  >
+                                    {product.price}
+                                  </Button>
+                                ) : (
+                                  <Input
+                                    type="text"
+                                    value={editableData[product.code] || ""}
+                                    onChange={(e) =>
+                                      handleInputChange(product.code, e.target.value)
+                                    }
+                                    placeholder="數量"
+                                    className="text-center"
+                                  />
+                                )
                               ) : (
-                                <Input
-                                  type="text"
-                                  value={editableData[product.code] || ""}
-                                  onChange={(e) =>
-                                    handleInputChange(product.code, e.target.value)
-                                  }
-                                  placeholder="數量"
-                                  className="text-center"
-                                />
-                              )
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          );
+                        })
+                      ) : (
+                        <TableCell className="border text-center">
+                          {list.find((p) => p.tableRowTitle.includes(row)) ? (
+                            showAsButton ? (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={() =>
+                                  handleButtonClick(
+                                    list.find((p) => p.tableRowTitle.includes(row))!.productId
+                                  )
+                                }
+                                className="w-full"
+                              >
+                                {list.find((p) => p.tableRowTitle.includes(row))!.price}
+                              </Button>
                             ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-                        );
-                      })}
+                              <Input
+                                type="text"
+                                value={
+                                  editableData[
+                                    list.find((p) => p.tableRowTitle.includes(row))!.productId
+                                  ] || ""
+                                }
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    String(list.find((p) => p.tableRowTitle === row)!.productId),
+                                    e.target.value
+                                  )
+                                }
+                                placeholder="數量"
+                                className="text-center"
+                              />
+                            )
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>

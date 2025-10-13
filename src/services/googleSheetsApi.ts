@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycby3cWi_ZuxBzxAuEBi8A0XTpQ-xqf_kb397TrJ3x32u3U9nbr4OwrbZDY2uJJCttQ1s/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxo5qmyxGGH2-xU-lI14momYlErYFoL1WrEU1J6Uhxg2PsT0LpKfkllEkhGwsNp5VeV/exec";
 
 export interface GoogleSheetsProduct {
   productId: string;
@@ -7,7 +7,7 @@ export interface GoogleSheetsProduct {
   name: string;
   brand: string;
   seriesList: string;
-  modelList: string;
+  model: string;
   colors: string;
   rowNumber: number;
   tableTitle: string;
