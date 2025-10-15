@@ -113,8 +113,10 @@ export const ProductTableView = ({
     let count = 0;
     Object.entries(editableData).forEach(([productId, value]) => {
       const qty = parseInt(value);
+
       if (value && !isNaN(qty) && qty > 0) {
-        const product = products.find((item) => item.id === parseInt(productId));
+        const product = products.find((item) => item.code === productId);
+        console.log(product);
         if (product) {
           onSelectProduct(product, qty);
           count++;

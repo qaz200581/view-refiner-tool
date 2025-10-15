@@ -256,7 +256,7 @@ export const useStore = create<StoreState>()(
           // 轉換 API 產品數據為應用產品格式
           const formattedProducts: Product[] = apiProducts.map((p, index) => ({
             id: index + 1,
-            code: p.code,
+            code: p.productId,
             name: p.name,
             series: p.seriesList,
             vendor: p.brand,
