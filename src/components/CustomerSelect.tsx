@@ -55,10 +55,10 @@ export const CustomerSelect = () => {
     const targetCustomer = customer || selectedCustomer;
     if (!targetCustomer || !orderInfo.date) return;
 
-    const dateStr = orderInfo.date.replace(/-/g, "");
+    const dateStr = orderInfo.date.slice(2, 4) + orderInfo.date.slice(5, 7)//orderInfo.date.replace(/-/g, "");
     const customerCode = targetCustomer.code.padStart(3, "0");
     const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
-    const serialNumber = `${dateStr}${customerCode}${randomNum}`;
+    const serialNumber = `SL${customerCode}${dateStr}${randomNum}`;
     
     updateOrderInfo({ serialNumber });
   };

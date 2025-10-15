@@ -68,7 +68,8 @@ const Index = () => {
         {/* 主要內容區域 */}
         <div className="space-y-6">
           {/* 桌面版：顯示所有組件 */}
-          <div className="hidden md:grid md:grid-rows-2 gap-6 max-w-screen-2xl mx-auto">
+          <div className="hidden md:grid md:grid-rows-[auto_auto] gap-6 max-w-screen-2xl mx-auto">
+
             <CustomerSelect />
             <SalesProductList />
           </div>

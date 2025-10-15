@@ -33,11 +33,13 @@ export const ProductGridView = ({
         >
           <CardContent className="p-4">
             <div className="space-y-2">
-              <div className="flex items-start justify-between">
+              <div className="flex items-start">
                 <div className="flex-1">
-                  <h4 className="font-medium text-xs">
-                    {product.vendor} • {product.series}
-                  </h4>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-xs">
+                      {product.vendor} • {product.series}
+                    </h4>
+                  </div>
                   <p className="text-s font-bold text-muted-foreground mt-1">
                     {product.model}
                   </p>
@@ -45,9 +47,6 @@ export const ProductGridView = ({
                     {product.remark}
                   </p>
                 </div>
-                <Badge variant="outline" className="text-xs">
-                  {product.code}
-                </Badge>
               </div>
               <div className="flex items-center justify-between pt-2 border-t">
                 <span className="text-lg font-bold text-primary">
