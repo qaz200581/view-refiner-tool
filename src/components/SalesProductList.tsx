@@ -243,7 +243,7 @@ const SortableItem = ({
             type="number" 
             min="0" 
             step="0.01" 
-            value={item.price} 
+            value={item.priceDistribution} 
             onChange={(e) => onPriceChange(index, e.target.value)} 
             onFocus={() => setEditingPrice(index)} 
             onBlur={() => setEditingPrice(null)} 
@@ -278,20 +278,20 @@ export const SalesProductList = () => {
   };
 
   const handlePriceChange = (index: number, price: string) => {
-    updateSalesItem(index, { price: parseFloat(price) || 0, isPriceModified: true });
+    updateSalesItem(index, { priceDistribution: parseFloat(price) || 0, isPriceModified: true });
     setEditingPrice(null);
   };
 
   const handleModelsChange = (index: number, model: string) => {
     const item = salesItems[index];
     const matchingProduct = products.find(p => p.vendor === item.vendor && p.series === item.series && p.model === model);
-    if (matchingProduct) { updateSalesItem(index, { model, remark: matchingProduct.remark, price: matchingProduct.price, isPriceModified: false ,code: matchingProduct.code}); toast.success("已更新型號與備註");}
+    if (matchingProduct) { updateSalesItem(index, { model, remark: matchingProduct.remark, priceDistribution: matchingProduct.priceDistribution, isPriceModified: false ,code: matchingProduct.code}); toast.success("已更新型號與備註");}
   };
 
   const handleRemarkChange = (index: number, remark: string) => {
     const item = salesItems[index];
     const matchingProduct = products.find(p => p.vendor === item.vendor && p.series === item.series && p.remark === remark);
-    if (matchingProduct) { updateSalesItem(index, { remark, price: matchingProduct.price, isPriceModified: false,code: matchingProduct.code}); toast.success("已更新備註"); }
+    if (matchingProduct) { updateSalesItem(index, { remark, priceDistribution: matchingProduct.priceDistribution, isPriceModified: false,code: matchingProduct.code}); toast.success("已更新備註"); }
   };
 
   const handleCopyItem = (index: number) => { const item = salesItems[index]; updateSalesItem(salesItems.length, { ...item, time: Date.now() }); toast.success(`已複製 ${item.name}`); };

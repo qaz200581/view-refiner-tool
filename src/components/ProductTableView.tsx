@@ -18,7 +18,7 @@ interface Product {
   name: string;
   series: string;
   remark: string;
-  price: number;
+  priceDistribution: number;
   tableTitle?: string; // 表格標題，可能包含多個值以逗號分隔
   tableRowTitle?: string; // 列 (row)，可能包含多個值以逗號分隔
   tableColTitle?: string; // 欄 (column)，可能包含多個值以逗號分隔
@@ -34,7 +34,7 @@ interface GroupedProduct {
   series: string;
   vendor: string;
   remark: string;
-  price: number;
+  priceDistribution: number;
   productId: number;
   tableTitle: string; // 改為陣列以儲存多個 tableTitle
   tableRowTitle: string; // 改為陣列以儲存多個 tableRowTitle
@@ -65,7 +65,7 @@ export const ProductTableView = ({
           series: product.series,
           vendor: product.vendor,
           remark: product.remark,
-          price: product.price,
+          priceDistribution: product.priceDistribution,
           productId: product.id,
           tableTitle: title,
           tableRowTitle: product.tableRowTitle,
@@ -200,7 +200,7 @@ export const ProductTableView = ({
                                     onClick={() => handleButtonClick(product.productId)}
                                     className="w-full"
                                   >
-                                    {product.price}
+                                    {product.priceDistribution}
                                   </Button>
                                 ) : (
                                   <Input
@@ -233,7 +233,7 @@ export const ProductTableView = ({
                                 }
                                 className="w-full"
                               >
-                                {list.find((p) => p.tableRowTitle.includes(row))!.price}
+                                {list.find((p) => p.tableRowTitle.includes(row))!.priceDistribution}
                               </Button>
                             ) : (
                               <Input

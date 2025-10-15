@@ -379,7 +379,7 @@ export const CustomerSelect = () => {
           </div>
         )}
 
-        {/* 選中的客戶資訊 */}
+        {/* 選中的客戶資訊 
         {selectedCustomer && (
           <div className="mt-4 p-4 bg-accent/20 rounded-lg animate-fade-in">
             <h4 className="font-medium text-primary mb-2">當前選擇的客戶</h4>
@@ -395,6 +395,7 @@ export const CustomerSelect = () => {
             </div>
           </div>
         )}
+        */}
       </CardContent>
     </Card>
   );

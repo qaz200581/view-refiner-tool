@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbxo5qmyxGGH2-xU-lI14momYlErYFoL1WrEU1J6Uhxg2PsT0LpKfkllEkhGwsNp5VeV/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwGBJzxjPzCrKFPcRotxBjget4W_8BnQRGwD2mxX9lg190VWdHcPOx1eywaOe_YfOZr/exec";
 
 export interface GoogleSheetsProduct {
   productId: string;
@@ -13,6 +13,8 @@ export interface GoogleSheetsProduct {
   tableTitle: string;
   tableRowTitle: string;
   tableColTitle: string;
+  priceRetail: number;
+  priceDistribution: number;
 }
 
 export interface GoogleSheetsSale {

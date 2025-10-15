@@ -18,7 +18,8 @@ export interface Product {
   series: string;
   vendor: string;
   remark: string;
-  price: number;
+  priceDistribution: number;
+  priceRetail: number;
   model: string;
   originalPrice?: number;
   state?: '啟用中' | '停用' | '預購中' | '售完停產';
@@ -28,6 +29,7 @@ export interface Product {
   tableRowTitle?: string;
   tableColTitle?: string;
   isPriceModified?: boolean;
+  
 }
 
 export interface SalesItem extends Product {
@@ -130,6 +132,7 @@ export const useStore = create<StoreState>()(
         // 當選擇客戶時，清空價格緩存並重新計算
         if (customer) {
           const { salesItems } = get();
+          console.log(salesItems)
           const updatedItems = salesItems.map(item => ({
             ...item,
             price: get().getProductPrice(item.code),
@@ -174,7 +177,7 @@ export const useStore = create<StoreState>()(
         
         // 如果更新了數量或價格，重新計算總價
         if ('quantity' in updates || 'price' in updates) {
-          item.totalPrice = item.quantity * item.price;
+          item.totalPrice = item.quantity * item.priceDistribution;
         }
         
         updatedItems[index] = item;
@@ -243,13 +246,12 @@ export const useStore = create<StoreState>()(
         
         // 這裡可以實現客戶專屬價格邏輯
         // 目前先返回原價
-        return product.originalPrice || product.price;
+        return product.priceDistribution || product.priceRetail;
       },
       
       // 從 API 載入產品
       loadProductsFromApi: async () => {
         set({ isLoadingProducts: true });
-        console.log("載入產品資料...");
         try {
           const apiProducts = await fetchProducts();
           
@@ -265,7 +267,8 @@ export const useStore = create<StoreState>()(
             tableTitle: p.tableTitle,
             tableRowTitle: p.tableRowTitle,
             tableColTitle: p.tableColTitle,
-            price: 1290, // 預設價格，可根據實際需求調整
+            priceRetail: p.priceRetail,
+            priceDistribution: p.priceDistribution,
             state: p.status === '啟用中' ? '啟用中' : '停用',
           }));
           console.log("API 產品資料:", formattedProducts);
@@ -279,7 +282,6 @@ export const useStore = create<StoreState>()(
       // 從 API 載入客戶
       loadCustomersFromApi: async () => {
         set({ isLoadingCustomers: true });
-        console.log("載入客戶資料...");
         try {
           const apiCustomers = await fetchCustomers();
           console.log("API 客戶資料:", apiCustomers);

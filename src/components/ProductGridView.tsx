@@ -11,7 +11,7 @@ interface Product {
   name: string;
   series: string;
   remark: string;
-  price: number;
+  priceDistribution: number;
 }
 
 interface ProductGridViewProps {
@@ -50,7 +50,7 @@ export const ProductGridView = ({
               </div>
               <div className="flex items-center justify-between pt-2 border-t">
                 <span className="text-lg font-bold text-primary">
-                  ${product.price}
+                  ${product.priceDistribution}
                 </span>
                 <Button size="sm" variant="secondary">
                   <ShoppingCart className="w-4 h-4 mr-1" />
