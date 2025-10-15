@@ -56,7 +56,7 @@ interface SortableItemProps {
   onPriceChange: (index: number, price: string) => void;
   onCopyItem: (index: number) => void;
   onRemoveItem: (index: number) => void;
-  onSeriesChange: (index: number, series: string) => void;
+  onModelsChange: (index: number, model: string) => void;
   onRemarkChange: (index: number, remark: string) => void;
   editingPrice: number | null;
   editingQuantity: number | null;
@@ -75,7 +75,7 @@ const SortableItem = ({
   onPriceChange,
   onCopyItem,
   onRemoveItem,
-  onSeriesChange,
+  onModelsChange,
   onRemarkChange,
   editingPrice,
   editingQuantity,
@@ -94,12 +94,11 @@ const SortableItem = ({
 
   const modelForProduct = useMemo(() => {
     return Array.from(new Set(products.filter(p => p.vendor === item.vendor && p.series === item.series).map(p => p.model)));
-  }, [products, item.vendor, item.name]);
+  }, [products, item.vendor, item.series]);
 
   const remarksForSeries = useMemo(() => {
-    if (!item.series) return [];
     return Array.from(new Set(products.filter(p => p.vendor === item.vendor && p.series === item.series && p.model === item.model).map(p => p.remark)));
-  }, [products, item.vendor, item.name, item.series]);
+  }, [products, item.vendor, item.model, item.series]);
 
   return (
     <div ref={setNodeRef} style={style} className="flex flex-col md:flex-row items-start md:items-center gap-3 p-4 border rounded-lg bg-surface hover:shadow-md transition-shadow touch-none">
@@ -132,7 +131,7 @@ const SortableItem = ({
           
           <div className="space-y-1">
             {modelForProduct.length > 0 ? (
-              <Select value={item.model} onValueChange={(v) => onSeriesChange(index, v)}>
+              <Select value={item.model} onValueChange={(v) => onModelsChange(index, v)}>
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
@@ -170,7 +169,7 @@ const SortableItem = ({
               <h4 className="font-medium text-sm mb-2">{item.vendor} • {item.series}</h4>
               <div className="flex items-center gap-2 flex-wrap">
                 {modelForProduct.length > 0 ? (
-                  <Select value={item.model} onValueChange={(v) => onSeriesChange(index, v)}>
+                  <Select value={item.model} onValueChange={(v) => onModelsChange(index, v)}>
                     <SelectTrigger className="h-7 text-xs w-auto min-w-[200px]">
                       <SelectValue />
                     </SelectTrigger>
@@ -283,10 +282,10 @@ export const SalesProductList = () => {
     setEditingPrice(null);
   };
 
-  const handleSeriesChange = (index: number, series: string) => {
+  const handleModelsChange = (index: number, model: string) => {
     const item = salesItems[index];
-    const matchingProduct = products.find(p => p.vendor === item.vendor && p.series === item.series);
-    if (matchingProduct) { updateSalesItem(index, { series, remark: matchingProduct.remark, price: matchingProduct.price, isPriceModified: false ,code: matchingProduct.code}); toast.success("已更新系列與備註"); }
+    const matchingProduct = products.find(p => p.vendor === item.vendor && p.series === item.series && p.model === model);
+    if (matchingProduct) { updateSalesItem(index, { model, remark: matchingProduct.remark, price: matchingProduct.price, isPriceModified: false ,code: matchingProduct.code}); toast.success("已更新型號與備註");}
   };
 
   const handleRemarkChange = (index: number, remark: string) => {
@@ -325,7 +324,7 @@ export const SalesProductList = () => {
         </div>
       </CardHeader>
       <CardContent className="flex-1 overflow-hidden flex flex-col pb-20 md:pb-6">
-        {salesItems.length === 0 ? <div className="text-center py-12 text-muted-foreground"><ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-50" /><p className="text-lg">銷售清單為空</p><p className="text-sm">從產品選擇區域添加商品到此清單</p></div> : <div className="flex-1 overflow-auto"><DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}><SortableContext items={salesItems.map(item => `${item.id}-${item.time}`)} strategy={verticalListSortingStrategy}><div className="space-y-3">{salesItems.map((item, index) => <SortableItem key={`${item.id}-${item.time}`} id={`${item.id}-${item.time}`} item={item} index={index} onQuantityChange={handleQuantityChange} onQuantityInput={handleQuantityInput} onPriceChange={handlePriceChange} onCopyItem={handleCopyItem} onRemoveItem={handleRemoveItem} onSeriesChange={handleSeriesChange} onRemarkChange={handleRemarkChange} editingPrice={editingPrice} editingQuantity={editingQuantity} setEditingPrice={setEditingPrice} setEditingQuantity={setEditingQuantity} handleKeyDown={handleKeyDown} products={products} />)}</div></SortableContext></DndContext></div>}
+        {salesItems.length === 0 ? <div className="text-center py-12 text-muted-foreground"><ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-50" /><p className="text-lg">銷售清單為空</p><p className="text-sm">從產品選擇區域添加商品到此清單</p></div> : <div className="flex-1 overflow-auto"><DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}><SortableContext items={salesItems.map(item => `${item.id}-${item.time}`)} strategy={verticalListSortingStrategy}><div className="space-y-3">{salesItems.map((item, index) => <SortableItem key={`${item.id}-${item.time}`} id={`${item.id}-${item.time}`} item={item} index={index} onQuantityChange={handleQuantityChange} onQuantityInput={handleQuantityInput} onPriceChange={handlePriceChange} onCopyItem={handleCopyItem} onRemoveItem={handleRemoveItem} onModelsChange={handleModelsChange} onRemarkChange={handleRemarkChange} editingPrice={editingPrice} editingQuantity={editingQuantity} setEditingPrice={setEditingPrice} setEditingQuantity={setEditingQuantity} handleKeyDown={handleKeyDown} products={products} />)}</div></SortableContext></DndContext></div>}
       </CardContent>
       {salesItems.length > 0 && <div className="fixed md:relative bottom-0 left-0 right-0 bg-background border-t md:border-t-0 p-4 md:p-0 z-30"><div className="bg-gradient-surface rounded-lg p-4"><div className="flex items-center justify-between mb-2"><div className="flex items-center gap-2 text-muted-foreground"><Calculator className="w-4 h-4" />訂單統計</div></div><div className="grid grid-cols-2 gap-4 text-center"><div><div className="text-2xl font-bold text-primary">{getTotalQuantity()}</div><div className="text-sm text-muted-foreground">商品總數</div></div><div><div className="text-2xl font-bold text-secondary">${getTotalAmount().toLocaleString()}</div><div className="text-sm text-muted-foreground">訂單總額</div></div></div></div></div>}
     </Card>
