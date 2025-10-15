@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,6 @@ export const ProductSelect = () => {
     isLoadingProducts,
   } = useStore();
   
-  // 初次載入時從 API 獲取產品（如果產品列表為空）
   useEffect(() => {
     if (products.length === 0) {
       loadProductsFromApi();
@@ -35,105 +34,144 @@ export const ProductSelect = () => {
 
   const [quickSearch, setQuickSearch] = useState("");
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
-  const [selectedNames, setSelectedNames] = useState<string[]>([]);
+  const [selectedModels, setSelectedModels] = useState<string[]>([]); // ✅ 修正命名
   const [selectedSeries, setSelectedSeries] = useState<string[]>([]);
   const [selectedRemarks, setSelectedRemarks] = useState<string[]>([]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
 
-  // 獲取所有唯一選項（根據已選篩選條件進行關聯過濾）
-  const uniqueVendors = useMemo(
-    () => Array.from(new Set(products.map((p) => p.vendor))),
-    [products]
-  );
-  
-  const uniqueNames = useMemo(() => {
-    let filtered = products;
-    if (selectedVendors.length > 0) {
-      filtered = filtered.filter(p => selectedVendors.includes(p.vendor));
-    }
-    return Array.from(new Set(filtered.map((p) => p.name)));
-  }, [products, selectedVendors]);
-  
-  const uniqueSeries = useMemo(() => {
-    let filtered = products;
-    if (selectedVendors.length > 0) {
-      filtered = filtered.filter(p => selectedVendors.includes(p.vendor));
-    }
-    if (selectedNames.length > 0) {
-      filtered = filtered.filter(p => selectedNames.includes(p.name));
-    }
-    return Array.from(new Set(filtered.map((p) => p.series)));
-  }, [products, selectedVendors, selectedNames]);
-  
-  const uniqueRemarks = useMemo(() => {
-    let filtered = products;
-    if (selectedVendors.length > 0) {
-      filtered = filtered.filter(p => selectedVendors.includes(p.vendor));
-    }
-    if (selectedNames.length > 0) {
-      filtered = filtered.filter(p => selectedNames.includes(p.name));
-    }
-    if (selectedSeries.length > 0) {
-      filtered = filtered.filter(p => selectedSeries.includes(p.series));
-    }
-    return Array.from(new Set(filtered.map((p) => p.remark)));
-  }, [products, selectedVendors, selectedNames, selectedSeries]);
+  // ✅ 全雙向交互過濾基礎函數
+  const getBaseFilteredProducts = useCallback((excludeField?: string) => {
+    return products.filter((product) => {
+      const conditions: Record<string, string[]> = {
+        vendor: selectedVendors,
+        model: selectedModels,
+        series: selectedSeries,
+        remark: selectedRemarks,
+      };
+      
+      // 排除指定欄位，用於計算該欄位的可用選項
+      if (excludeField) {
+        delete conditions[excludeField];
+      }
+      
+      // 檢查所有其他條件
+      return Object.entries(conditions).every(([key, values]) => {
+        if (!values || values.length === 0) return true;
+        return values.includes(String(product[key as keyof typeof product]));
+      });
+    });
+  }, [products, selectedVendors, selectedModels, selectedSeries, selectedRemarks]);
 
-  // 篩選產品
+  // ✅ 動態唯一選項（全雙向交互）
+  const uniqueVendors = useMemo(() => {
+    if (isLoadingProducts) return [];
+    const filtered = getBaseFilteredProducts('vendor');
+    return Array.from(new Set(filtered.map(p => p.vendor || '')))
+      .filter(Boolean)
+      .sort((a, b) => {
+        // 按數量排序（選項越多的越前面）
+        const countA = filtered.filter(p => p.vendor === a).length;
+        const countB = filtered.filter(p => p.vendor === b).length;
+        return countB - countA;
+      });
+  }, [getBaseFilteredProducts, isLoadingProducts]);
+
+  const uniqueModels = useMemo(() => {
+    if (isLoadingProducts) return [];
+    const filtered = getBaseFilteredProducts('model');
+    return Array.from(new Set(filtered.map(p => p.model || '')))
+      .filter(Boolean)
+      .sort((a, b) => {
+        const countA = filtered.filter(p => p.model === a).length;
+        const countB = filtered.filter(p => p.model === b).length;
+        return countB - countA;
+      });
+  }, [getBaseFilteredProducts, isLoadingProducts]);
+
+  const uniqueSeries = useMemo(() => {
+    if (isLoadingProducts) return [];
+    const filtered = getBaseFilteredProducts('series');
+    return Array.from(new Set(filtered.map(p => p.series || '')))
+      .filter(Boolean)
+      .sort((a, b) => {
+        const countA = filtered.filter(p => p.series === a).length;
+        const countB = filtered.filter(p => p.series === b).length;
+        return countB - countA;
+      });
+  }, [getBaseFilteredProducts, isLoadingProducts]);
+
+  const uniqueRemarks = useMemo(() => {
+    if (isLoadingProducts) return [];
+    const filtered = getBaseFilteredProducts('remark');
+    return Array.from(new Set(filtered.map(p => p.remark || '')))
+      .filter(Boolean)
+      .sort((a, b) => {
+        const countA = filtered.filter(p => p.remark === a).length;
+        const countB = filtered.filter(p => p.remark === b).length;
+        return countB - countA;
+      });
+  }, [getBaseFilteredProducts, isLoadingProducts]);
+
+  // ✅ 最終產品篩選（所有條件都要滿足）
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       // 快速搜尋
       if (quickSearch) {
         const search = quickSearch.toLowerCase();
         const matchesQuick =
-          product.name.toLowerCase().includes(search) ||
-          product.vendor.toLowerCase().includes(search) ||
-          product.series.toLowerCase().includes(search) ||
-          product.remark.toLowerCase().includes(search) ||
-          product.code.toLowerCase().includes(search);
+          (product.model?.toLowerCase().includes(search) ?? false) ||
+          (product.vendor?.toLowerCase().includes(search) ?? false) ||
+          (product.series?.toLowerCase().includes(search) ?? false) ||
+          (product.remark?.toLowerCase().includes(search) ?? false) ||
+          (product.code?.toLowerCase().includes(search) ?? false);
         if (!matchesQuick) return false;
       }
 
-      // 進階篩選
-      if (selectedVendors.length > 0 && !selectedVendors.includes(product.vendor))
-        return false;
-      if (selectedNames.length > 0 && !selectedNames.includes(product.name))
-        return false;
-      if (selectedSeries.length > 0 && !selectedSeries.includes(product.series))
-        return false;
-      if (selectedRemarks.length > 0 && !selectedRemarks.includes(product.remark))
-        return false;
-
-      return true;
+      // 所有篩選條件
+      const conditions = [
+        selectedVendors.length === 0 || selectedVendors.includes(product.vendor),
+        selectedModels.length === 0 || selectedModels.includes(product.model),
+        selectedSeries.length === 0 || selectedSeries.includes(product.series),
+        selectedRemarks.length === 0 || selectedRemarks.includes(product.remark),
+      ];
+      
+      return conditions.every(Boolean);
     });
   }, [
     products,
     quickSearch,
     selectedVendors,
-    selectedNames,
+    selectedModels,
     selectedSeries,
     selectedRemarks,
   ]);
 
-  // 處理選擇產品
-  const handleSelectProduct = (product: any, quantity: number = 1) => {
+  // ✅ 清除所有篩選
+  const clearAllFilters = useCallback(() => {
+    setQuickSearch("");
+    setSelectedVendors([]);
+    setSelectedModels([]);
+    setSelectedSeries([]);
+    setSelectedRemarks([]);
+  }, []);
+
+  // ✅ 處理選擇產品
+  const handleSelectProduct = useCallback((product: any, quantity: number = 1) => {
     if (!selectedCustomer) {
       toast.error("請先在「客戶資訊」區域選擇客戶");
       return;
     }
     addSalesItem(product, quantity);
-    toast.success(`已添加 ${quantity} x ${product.name}`);
-  };
+    toast.success(`已添加 ${product.name} x ${quantity}`);
+  }, [selectedCustomer, addSalesItem]);
 
-  // 清除所有篩選
-  const clearAllFilters = () => {
-    setQuickSearch("");
-    setSelectedVendors([]);
-    setSelectedNames([]);
-    setSelectedSeries([]);
-    setSelectedRemarks([]);
-  };
+  // ✅ 活躍篩選數量
+  const activeFilterCount = useMemo(() => 
+    selectedVendors.length + selectedModels.length + 
+    selectedSeries.length + selectedRemarks.length, 
+    [selectedVendors, selectedModels, selectedSeries, selectedRemarks]
+  );
 
   return (
     <>
@@ -144,7 +182,7 @@ export const ProductSelect = () => {
         size="lg"
       >
         <Package className="w-5 h-5 mb-1" />
-        <span className="hidden md:inline [writing-mode:vertical-rl] rotate-360 leading-none tracking-tight text-x">
+        <span className="hidden md:inline [writing-mode:vertical-rl] rotate-360 leading-none tracking-tight text-xs">
           產品選擇
         </span>
         <ChevronRight
@@ -176,6 +214,11 @@ export const ProductSelect = () => {
                 產品選擇
                 <Badge variant="secondary" className="ml-2">
                   {filteredProducts.length} 項產品
+                  {activeFilterCount > 0 && (
+                    <Badge variant="destructive" className="ml-2 text-xs">
+                      {activeFilterCount} 篩選
+                    </Badge>
+                  )}
                 </Badge>
               </CardTitle>
               <Button
@@ -198,17 +241,18 @@ export const ProductSelect = () => {
                 setShowAdvancedFilters={setShowAdvancedFilters}
                 selectedVendors={selectedVendors}
                 setSelectedVendors={setSelectedVendors}
-                selectedNames={selectedNames}
-                setSelectedNames={setSelectedNames}
+                selectedModels={selectedModels}
+                setSelectedModels={setSelectedModels} // ✅ 修正傳遞
                 selectedSeries={selectedSeries}
                 setSelectedSeries={setSelectedSeries}
                 selectedRemarks={selectedRemarks}
                 setSelectedRemarks={setSelectedRemarks}
                 uniqueVendors={uniqueVendors}
-                uniqueNames={uniqueNames}
+                uniqueModels={uniqueModels}
                 uniqueSeries={uniqueSeries}
                 uniqueRemarks={uniqueRemarks}
                 clearAllFilters={clearAllFilters}
+                isLoading={isLoadingProducts}
               />
 
               {/* 視圖切換 */}
@@ -243,8 +287,23 @@ export const ProductSelect = () => {
               ) : filteredProducts.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Package className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg">沒有符合的產品</p>
-                  <p className="text-sm">請調整搜尋或篩選條件</p>
+                  <p className="text-lg">
+                    {activeFilterCount > 0 
+                      ? "沒有符合所有篩選條件的產品" 
+                      : "沒有符合搜尋條件的產品"
+                    }
+                  </p>
+                  <p className="text-sm">
+                    {activeFilterCount > 0 
+                      ? "請調整篩選條件或清除篩選" 
+                      : "請嘗試搜尋或調整篩選條件"
+                    }
+                  </p>
+                  {activeFilterCount > 0 && (
+                    <Button onClick={clearAllFilters} variant="outline" className="mt-4">
+                      清除所有篩選
+                    </Button>
+                  )}
                 </div>
               ) : viewMode === "grid" ? (
                 <ProductGridView

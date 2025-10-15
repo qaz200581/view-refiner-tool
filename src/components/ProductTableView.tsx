@@ -75,7 +75,7 @@ export const ProductTableView = ({
     });
 
     return grouped;
-  }, [products]);
+  }, [products]);7
 
   // 橫向欄位：表格第一列，支援多值 tableColTitle
   const getUniqueCols = (products: GroupedProduct[]) =>

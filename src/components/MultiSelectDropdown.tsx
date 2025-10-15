@@ -17,6 +17,7 @@ interface MultiSelectDropdownProps {
   onChange: (selected: string[]) => void;
   label: string;
   placeholder?: string;
+  disabled?: boolean
 }
 
 export const MultiSelectDropdown = ({

@@ -285,14 +285,14 @@ export const SalesProductList = () => {
 
   const handleSeriesChange = (index: number, series: string) => {
     const item = salesItems[index];
-    const matchingProduct = products.find(p => p.vendor === item.vendor && p.name === item.name && p.series === series);
-    if (matchingProduct) { updateSalesItem(index, { series, remark: matchingProduct.remark, price: matchingProduct.price, isPriceModified: false }); toast.success("已更新系列與備註"); }
+    const matchingProduct = products.find(p => p.vendor === item.vendor && p.series === item.series);
+    if (matchingProduct) { updateSalesItem(index, { series, remark: matchingProduct.remark, price: matchingProduct.price, isPriceModified: false ,code: matchingProduct.code}); toast.success("已更新系列與備註"); }
   };
 
   const handleRemarkChange = (index: number, remark: string) => {
     const item = salesItems[index];
-    const matchingProduct = products.find(p => p.vendor === item.vendor && p.name === item.name && p.series === item.series && p.remark === remark);
-    if (matchingProduct) { updateSalesItem(index, { remark, price: matchingProduct.price, isPriceModified: false }); toast.success("已更新備註"); }
+    const matchingProduct = products.find(p => p.vendor === item.vendor && p.series === item.series && p.remark === remark);
+    if (matchingProduct) { updateSalesItem(index, { remark, price: matchingProduct.price, isPriceModified: false,code: matchingProduct.code}); toast.success("已更新備註"); }
   };
 
   const handleCopyItem = (index: number) => { const item = salesItems[index]; updateSalesItem(salesItems.length, { ...item, time: Date.now() }); toast.success(`已複製 ${item.name}`); };

@@ -1,6 +1,7 @@
 import { Search, Filter, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { MultiSelectDropdown } from "./MultiSelectDropdown";
 
 interface ProductSearchFiltersProps {
@@ -10,17 +11,18 @@ interface ProductSearchFiltersProps {
   setShowAdvancedFilters: (value: boolean) => void;
   selectedVendors: string[];
   setSelectedVendors: (value: string[]) => void;
-  selectedNames: string[];
-  setSelectedNames: (value: string[]) => void;
+  selectedModels: string[];
+  setSelectedModels: (value: string[]) => void; // ✅ 修正命名
   selectedSeries: string[];
   setSelectedSeries: (value: string[]) => void;
   selectedRemarks: string[];
   setSelectedRemarks: (value: string[]) => void;
   uniqueVendors: string[];
-  uniqueNames: string[];
+  uniqueModels: string[];
   uniqueSeries: string[];
   uniqueRemarks: string[];
   clearAllFilters: () => void;
+  isLoading?: boolean; // ✅ 新增載入狀態
 }
 
 export const ProductSearchFilters = ({
@@ -30,17 +32,18 @@ export const ProductSearchFilters = ({
   setShowAdvancedFilters,
   selectedVendors,
   setSelectedVendors,
-  selectedNames,
-  setSelectedNames,
+  selectedModels,
+  setSelectedModels, // ✅ 修正命名
   selectedSeries,
   setSelectedSeries,
   selectedRemarks,
   setSelectedRemarks,
   uniqueVendors,
-  uniqueNames,
+  uniqueModels,
   uniqueSeries,
   uniqueRemarks,
   clearAllFilters,
+  isLoading = false,
 }: ProductSearchFiltersProps) => {
   return (
     <div className="space-y-4">
@@ -52,6 +55,7 @@ export const ProductSearchFilters = ({
           value={quickSearch}
           onChange={(e) => setQuickSearch(e.target.value)}
           className="pl-10"
+          disabled={isLoading}
         />
       </div>
 
@@ -62,17 +66,30 @@ export const ProductSearchFilters = ({
           size="sm"
           onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
           className="flex-1"
+          disabled={isLoading}
         >
           <Filter className="w-4 h-4 mr-2" />
           進階篩選
+          {selectedVendors.length + selectedModels.length + 
+           selectedSeries.length + selectedRemarks.length > 0 && (
+            <Badge variant="destructive" className="ml-2 h-4 w-4">
+              {selectedVendors.length + selectedModels.length + 
+               selectedSeries.length + selectedRemarks.length}
+            </Badge>
+          )}
         </Button>
         {(selectedVendors.length > 0 ||
-          selectedNames.length > 0 ||
+          selectedModels.length > 0 ||
           selectedSeries.length > 0 ||
           selectedRemarks.length > 0) && (
-          <Button variant="outline" size="sm" onClick={clearAllFilters}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={clearAllFilters}
+            disabled={isLoading}
+          >
             <X className="w-4 h-4 mr-2" />
-            清除篩選
+            清除
           </Button>
         )}
       </div>
@@ -80,34 +97,47 @@ export const ProductSearchFilters = ({
       {/* 進階篩選選項 */}
       {showAdvancedFilters && (
         <div className="space-y-3 p-4 border rounded-lg bg-muted/30 animate-fade-in">
-          <MultiSelectDropdown
-            options={uniqueVendors}
-            selected={selectedVendors}
-            onChange={setSelectedVendors}
-            label="廠商"
-            placeholder="搜尋廠商..."
-          />
-          <MultiSelectDropdown
-            options={uniqueNames}
-            selected={selectedNames}
-            onChange={setSelectedNames}
-            label="產品名稱"
-            placeholder="搜尋產品名稱..."
-          />
-          <MultiSelectDropdown
-            options={uniqueSeries}
-            selected={selectedSeries}
-            onChange={setSelectedSeries}
-            label="系列"
-            placeholder="搜尋系列..."
-          />
-          <MultiSelectDropdown
-            options={uniqueRemarks}
-            selected={selectedRemarks}
-            onChange={setSelectedRemarks}
-            label="備註"
-            placeholder="搜尋備註..."
-          />
+          {isLoading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+              <p className="text-sm">載入篩選選項...</p>
+            </div>
+          ) : (
+            <>
+              <MultiSelectDropdown
+                options={uniqueVendors}
+                selected={selectedVendors}
+                onChange={setSelectedVendors}
+                label="廠商"
+                placeholder={`選擇廠商... (${uniqueVendors.length} 個可用)`}
+                disabled={isLoading}
+              />
+              <MultiSelectDropdown
+                options={uniqueSeries}
+                selected={selectedSeries}
+                onChange={setSelectedSeries}
+                label="系列"
+                placeholder={`選擇系列... (${uniqueSeries.length} 個可用)`}
+                disabled={isLoading}
+              />
+              <MultiSelectDropdown
+                options={uniqueModels}
+                selected={selectedModels}
+                onChange={setSelectedModels} // ✅ 修正 onChange
+                label="型號"
+                placeholder={`選擇型號... (${uniqueModels.length} 個可用)`}
+                disabled={isLoading}
+              />
+              <MultiSelectDropdown
+                options={uniqueRemarks}
+                selected={selectedRemarks}
+                onChange={setSelectedRemarks}
+                label="備註"
+                placeholder={`選擇備註... (${uniqueRemarks.length} 個可用)`}
+                disabled={isLoading}
+              />
+            </>
+          )}
         </div>
       )}
     </div>
