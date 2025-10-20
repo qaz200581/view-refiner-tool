@@ -43,6 +43,7 @@ export interface OrderInfo {
   serialNumber: string;
   paperSerialNumber?: string;
   customer?: Customer;
+  status?: string;
 }
 
 interface StoreState {
@@ -71,6 +72,8 @@ interface StoreState {
   setProducts: (products: Product[]) => void;
   addSelectedProduct: (product: Product) => void;
   removeSelectedProduct: (productId: number) => void;
+  setSalesItems: (items: SalesItem[]) => void;
+  setOrderInfo: (info: OrderInfo) => void;
   
   // 銷售清單操作
   addSalesItem: (product: Product, quantity?: number) => void;
@@ -156,6 +159,10 @@ export const useStore = create<StoreState>()(
         const { selectedProducts } = get();
         set({ selectedProducts: selectedProducts.filter(p => p.id !== productId) });
       },
+      
+      setSalesItems: (items) => set({ salesItems: items }),
+      
+      setOrderInfo: (info) => set({ orderInfo: info }),
 
       // 銷售清單操作
       addSalesItem: (product, quantity = 1) => {

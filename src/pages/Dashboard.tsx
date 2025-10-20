@@ -26,43 +26,93 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+type TabType = {
+  id: string;
+  type: string;
+  label: string;
+  data?: any;
+};
+
 export const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState("sales");
-  const [openTabs, setOpenTabs] = useState<string[]>(["sales"]);
+  const [activeTab, setActiveTab] = useState<string>("sales-1");
+  const [openTabs, setOpenTabs] = useState<TabType[]>([
+    { id: "sales-1", type: "sales", label: "新增訂單 #1" }
+  ]);
   const [dragStartX, setDragStartX] = useState(0);
   const [dragCurrentX, setDragCurrentX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const [salesCounter, setSalesCounter] = useState(1);
   
   const { 
     salesItems, 
     selectedCustomer, 
     orderInfo,
     clearAll,
+    setSalesItems,
+    setSelectedCustomer,
+    setOrderInfo,
   } = useStore();
 
-  const tabConfig = [
-    { value: "sales", label: "新增訂單", icon: ShoppingCart, component: null },
-    { value: "products", label: "產品管理", icon: Package, component: ProductList },
-    { value: "orders", label: "訂單紀錄", icon: FileText, component: OrderList },
-    { value: "sales-records", label: "銷售紀錄", icon: TrendingUp, component: SalesList },
-    { value: "purchase", label: "訂單轉採購", icon: ClipboardList, component: PurchaseConversion },
-    { value: "payments", label: "貨款查詢", icon: DollarSign, component: PaymentStatus },
+  const menuConfig = [
+    { value: "sales", label: "新增訂單", icon: ShoppingCart },
+    { value: "products", label: "產品管理", icon: Package },
+    { value: "orders", label: "訂單紀錄", icon: FileText },
+    { value: "sales-records", label: "銷售紀錄", icon: TrendingUp },
+    { value: "purchase", label: "訂單轉採購", icon: ClipboardList },
+    { value: "payments", label: "貨款查詢", icon: DollarSign },
   ];
 
-  const handleTabClick = (value: string) => {
-    setActiveTab(value);
-    if (!openTabs.includes(value)) {
-      setOpenTabs([...openTabs, value]);
+  const handleMenuClick = (value: string) => {
+    if (value === "sales") {
+      // 創建新的訂單 tab
+      const newCounter = salesCounter + 1;
+      setSalesCounter(newCounter);
+      const newTab = { 
+        id: `sales-${newCounter}`, 
+        type: "sales", 
+        label: `新增訂單 #${newCounter}` 
+      };
+      setOpenTabs([...openTabs, newTab]);
+      setActiveTab(newTab.id);
+    } else {
+      // 檢查是否已開啟
+      const existingTab = openTabs.find(tab => tab.type === value);
+      if (existingTab) {
+        setActiveTab(existingTab.id);
+      } else {
+        const menuItem = menuConfig.find(m => m.value === value);
+        const newTab = { 
+          id: value, 
+          type: value, 
+          label: menuItem?.label || value 
+        };
+        setOpenTabs([...openTabs, newTab]);
+        setActiveTab(newTab.id);
+      }
     }
   };
 
-  const handleCloseTab = (value: string, e: React.MouseEvent) => {
+  const handleLoadOrder = (order: any) => {
+    // 創建新的訂單 tab 並載入數據
+    const newCounter = salesCounter + 1;
+    setSalesCounter(newCounter);
+    const newTab = { 
+      id: `sales-${newCounter}`, 
+      type: "sales", 
+      label: `編輯訂單 ${order.orderInfo?.serialNumber || `#${newCounter}`}`,
+      data: order
+    };
+    setOpenTabs([...openTabs, newTab]);
+    setActiveTab(newTab.id);
+  };
+
+  const handleCloseTab = (tabId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const newOpenTabs = openTabs.filter(tab => tab !== value);
+    const newOpenTabs = openTabs.filter(tab => tab.id !== tabId);
     setOpenTabs(newOpenTabs);
-    if (activeTab === value && newOpenTabs.length > 0) {
-      setActiveTab(newOpenTabs[newOpenTabs.length - 1]);
+    if (activeTab === tabId && newOpenTabs.length > 0) {
+      setActiveTab(newOpenTabs[newOpenTabs.length - 1].id);
     }
   };
 
@@ -87,13 +137,11 @@ export const Dashboard = () => {
     const threshold = 50;
     
     if (Math.abs(diff) > threshold) {
-      const currentIndex = tabConfig.findIndex(t => t.value === activeTab);
+      const currentIndex = menuConfig.findIndex(m => m.value === activeTab);
       if (diff > 0 && currentIndex > 0) {
-        // 向右滑動，切換到上一個
-        setActiveTab(tabConfig[currentIndex - 1].value);
-      } else if (diff < 0 && currentIndex < tabConfig.length - 1) {
-        // 向左滑動，切換到下一個
-        setActiveTab(tabConfig[currentIndex + 1].value);
+        handleMenuClick(menuConfig[currentIndex - 1].value);
+      } else if (diff < 0 && currentIndex < menuConfig.length - 1) {
+        handleMenuClick(menuConfig[currentIndex + 1].value);
       }
     }
     
@@ -102,8 +150,7 @@ export const Dashboard = () => {
     setDragCurrentX(0);
   };
 
-  // 提交訂單
-  const handleSubmitOrder = () => {
+  const handleSubmitOrder = (tabId: string) => {
     if (!selectedCustomer) {
       toast.error("請先選擇客戶");
       return;
@@ -117,11 +164,14 @@ export const Dashboard = () => {
       return;
     }
 
-    // 暫存到 localStorage
     const orderData = {
+      id: Date.now().toString(),
       customer: selectedCustomer,
       items: salesItems,
-      orderInfo,
+      orderInfo: {
+        ...orderInfo,
+        status: orderInfo.status || "待處理"
+      },
       timestamp: new Date().toISOString(),
     };
     
@@ -131,118 +181,168 @@ export const Dashboard = () => {
     
     toast.success("訂單已暫存至本地");
     clearAll();
+    
+    // 關閉當前 tab
+    handleCloseTab(tabId, { stopPropagation: () => {} } as React.MouseEvent);
   };
 
-  // 清除所有資料
-  const handleClearAll = () => {
+  const handleClearAll = (tabId: string) => {
     if (confirm("確定要清除所有資料嗎？")) {
       clearAll();
       toast.success("已清除所有資料");
     }
   };
 
+  const getTabComponent = (tab: TabType) => {
+    switch (tab.type) {
+      case "sales":
+        return (
+          <div className="space-y-6">
+            <CustomerSelect />
+            <SalesProductList />
+            <ProductSelect />
+            
+            <div className="flex gap-3 justify-end sticky bottom-4 z-30">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => handleClearAll(tab.id)}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                清除全部
+              </Button>
+              <Button
+                size="lg"
+                onClick={() => handleSubmitOrder(tab.id)}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                提交訂單
+              </Button>
+            </div>
+          </div>
+        );
+      case "products":
+        return <ProductList />;
+      case "orders":
+        return <OrderList onLoadOrder={handleLoadOrder} />;
+      case "sales-records":
+        return <SalesList />;
+      case "purchase":
+        return <PurchaseConversion />;
+      case "payments":
+        return <PaymentStatus />;
+      default:
+        return null;
+    }
+  };
+
+  useEffect(() => {
+    // 載入訂單數據到當前 tab
+    const currentTab = openTabs.find(t => t.id === activeTab);
+    if (currentTab?.data) {
+      setSelectedCustomer(currentTab.data.customer);
+      setSalesItems(currentTab.data.items);
+      setOrderInfo(currentTab.data.orderInfo);
+      // 清除 data 以避免重複載入
+      const updatedTabs = openTabs.map(t => 
+        t.id === activeTab ? { ...t, data: undefined } : t
+      );
+      setOpenTabs(updatedTabs);
+    }
+  }, [activeTab]);
+
   return (
     <div className="min-h-screen bg-gradient-elegant">
       <div className="container mx-auto px-4 py-6 max-w-[1920px]">
         <StoreHeader />
 
-        {/* 桌面版 - Tab 導航 */}
-        <div className="hidden md:block">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            {/* Tab 列表 */}
-            <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border rounded-lg p-2 sticky top-4 z-30 shadow-sm">
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                {tabConfig.map((tab) => (
-                  <div
-                    key={tab.value}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-md cursor-pointer transition-all whitespace-nowrap",
-                      activeTab === tab.value
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "hover:bg-muted",
-                      openTabs.includes(tab.value) ? "opacity-100" : "opacity-60"
-                    )}
-                    onClick={() => handleTabClick(tab.value)}
-                  >
-                    <tab.icon className="w-4 h-4" />
-                    <span className="text-sm font-medium">{tab.label}</span>
-                    {openTabs.includes(tab.value) && tab.value !== "sales" && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0 ml-2 hover:bg-background/20"
-                        onClick={(e) => handleCloseTab(tab.value, e)}
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Tab 內容 */}
-            <TabsContent value="sales" className="mt-6 space-y-6">
-              <div className="grid grid-rows-[auto_auto] gap-6">
-                <CustomerSelect />
-                <SalesProductList />
-              </div>
-              <ProductSelect />
-              
-              {/* 桌面版提交和清除按鈕 */}
-              <div className="flex gap-3 justify-end sticky bottom-4 z-30">
+        {/* 桌面版 */}
+        <div className="hidden md:block space-y-4">
+          {/* 功能選單 - 滾輪式 */}
+          <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border rounded-lg p-3 sticky top-4 z-30 shadow-sm">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {menuConfig.map((menu) => (
                 <Button
+                  key={menu.value}
                   variant="outline"
-                  size="lg"
-                  onClick={handleClearAll}
+                  size="sm"
+                  className="flex items-center gap-2 whitespace-nowrap"
+                  onClick={() => handleMenuClick(menu.value)}
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  清除全部
+                  <menu.icon className="w-4 h-4" />
+                  <span className="text-sm">{menu.label}</span>
                 </Button>
-                <Button
-                  size="lg"
-                  onClick={handleSubmitOrder}
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  提交訂單
-                </Button>
-              </div>
-            </TabsContent>
+              ))}
+            </div>
+          </div>
 
-            {tabConfig.slice(1).map((tab) => (
-              <TabsContent key={tab.value} value={tab.value} className="mt-6">
-                {tab.component && <tab.component />}
-              </TabsContent>
+          {/* 已開啟的 Tab */}
+          <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border rounded-lg p-2 sticky top-20 z-20 shadow-sm">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {openTabs.map((tab) => (
+                <div
+                  key={tab.id}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-md cursor-pointer transition-all whitespace-nowrap",
+                    activeTab === tab.id
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "hover:bg-muted"
+                  )}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  <span className="text-sm font-medium">{tab.label}</span>
+                  {openTabs.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 w-5 p-0 ml-2 hover:bg-background/20"
+                      onClick={(e) => handleCloseTab(tab.id, e)}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tab 內容 */}
+          <div className="mt-6">
+            {openTabs.map((tab) => (
+              <div
+                key={tab.id}
+                className={cn(
+                  "space-y-6",
+                  activeTab === tab.id ? "block" : "hidden"
+                )}
+              >
+                {getTabComponent(tab)}
+              </div>
             ))}
-          </Tabs>
+          </div>
         </div>
 
         {/* 手機版 - 半圓卡片滑動選擇 */}
-        <div className="md:hidden">
-          {/* 半圓指示器 */}
+        <div className="md:hidden space-y-4">
+          {/* 功能選單 - 半圓卡片 */}
           <div className="relative h-32 mb-6 overflow-hidden">
             <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-primary/10 to-transparent rounded-t-full" />
             
-            {/* 卡片輪播 */}
             <div 
               ref={carouselRef}
               className="flex items-end justify-center gap-4 px-4 pb-4 relative z-10"
               onTouchStart={handleDragStart}
               onTouchMove={handleDragMove}
               onTouchEnd={handleDragEnd}
-              onMouseDown={handleDragStart}
-              onMouseMove={handleDragMove}
-              onMouseUp={handleDragEnd}
-              onMouseLeave={handleDragEnd}
             >
-              {tabConfig.map((tab, index) => {
-                const currentIndex = tabConfig.findIndex(t => t.value === activeTab);
+              {menuConfig.map((menu, index) => {
+                const currentIndex = menuConfig.findIndex(m => m.value === activeTab);
                 const distance = Math.abs(index - currentIndex);
-                const isActive = tab.value === activeTab;
+                const isActive = openTabs.some(t => t.type === menu.value && t.id === activeTab);
                 
                 return (
                   <div
-                    key={tab.value}
+                    key={menu.value}
                     className={cn(
                       "flex-shrink-0 transition-all duration-300 cursor-pointer",
                       isActive 
@@ -251,12 +351,7 @@ export const Dashboard = () => {
                           ? "w-16 h-16 opacity-70" 
                           : "w-12 h-12 opacity-40"
                     )}
-                    onClick={() => handleTabClick(tab.value)}
-                    style={{
-                      transform: isDragging 
-                        ? `translateX(${(dragCurrentX - dragStartX) * 0.5}px)` 
-                        : undefined
-                    }}
+                    onClick={() => handleMenuClick(menu.value)}
                   >
                     <div className={cn(
                       "w-full h-full rounded-full flex flex-col items-center justify-center gap-1 shadow-lg transition-all",
@@ -264,65 +359,62 @@ export const Dashboard = () => {
                         ? "bg-primary text-primary-foreground scale-110" 
                         : "bg-card hover:bg-accent"
                     )}>
-                      <tab.icon className={cn(
+                      <menu.icon className={cn(
                         isActive ? "w-8 h-8" : "w-6 h-6"
                       )} />
                       {isActive && (
-                        <span className="text-[10px] font-medium">{tab.label}</span>
+                        <span className="text-[10px] font-medium text-center px-1">{menu.label}</span>
                       )}
                     </div>
                   </div>
                 );
               })}
             </div>
-            
-            {/* 當前標籤名稱 */}
-            <div className="text-center mt-2">
-              <p className="text-sm font-medium text-primary">
-                {tabConfig.find(t => t.value === activeTab)?.label}
-              </p>
-            </div>
           </div>
 
-          {/* 內容區域 */}
-          <div className="mt-6">
-            {activeTab === "sales" ? (
-              <div className="space-y-6">
-                <CustomerSelect />
-                <SalesProductList />
-                <ProductSelect />
-                
-                {/* 提交和清除按鈕 */}
-                <div className="flex gap-3 sticky bottom-4 z-30">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={handleClearAll}
+          {/* 已開啟的 Tab */}
+          {openTabs.length > 1 && (
+            <div className="bg-background/95 backdrop-blur border rounded-lg p-2">
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                {openTabs.map((tab) => (
+                  <div
+                    key={tab.id}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-1.5 rounded-md cursor-pointer transition-all whitespace-nowrap text-sm",
+                      activeTab === tab.id
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-muted"
+                    )}
+                    onClick={() => setActiveTab(tab.id)}
                   >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    清除
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    onClick={handleSubmitOrder}
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    提交訂單
-                  </Button>
-                </div>
+                    <span>{tab.label}</span>
+                    {openTabs.length > 1 && (
+                      <button
+                        className="ml-1"
+                        onClick={(e) => handleCloseTab(tab.id, e)}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
-            ) : (
-              tabConfig.find(t => t.value === activeTab)?.component && (
-                <div>
-                  {tabConfig.find(t => t.value === activeTab)?.component && 
-                    (() => {
-                      const Component = tabConfig.find(t => t.value === activeTab)?.component;
-                      return Component ? <Component /> : null;
-                    })()
-                  }
-                </div>
-              )
-            )}
+            </div>
+          )}
+
+          {/* Tab 內容 */}
+          <div className="mt-6">
+            {openTabs.map((tab) => (
+              <div
+                key={tab.id}
+                className={cn(
+                  "space-y-6",
+                  activeTab === tab.id ? "block" : "hidden"
+                )}
+              >
+                {getTabComponent(tab)}
+              </div>
+            ))}
           </div>
         </div>
       </div>

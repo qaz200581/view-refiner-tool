@@ -1,56 +1,57 @@
-import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Edit, FileText, Trash2 } from "lucide-react";
-import { useStore } from "@/hooks/useStore";
-import { useNavigate } from "react-router-dom";
+import { FileText, Search, Edit, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
-export const OrderList = () => {
+type OrderListProps = {
+  onLoadOrder?: (order: any) => void;
+};
+
+export const OrderList = ({ onLoadOrder }: OrderListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [orders, setOrders] = useState<any[]>([]);
-  const navigate = useNavigate();
-  const { setSelectedCustomer, updateOrderInfo } = useStore();
 
-  // 從 localStorage 載入訂單
   useEffect(() => {
-    const savedOrders = JSON.parse(localStorage.getItem('pendingOrders') || '[]');
-    setOrders(savedOrders);
+    loadOrders();
   }, []);
 
-  // 編輯訂單 - 載入到銷售頁面
-  const handleEditOrder = (order: any) => {
-    // 設定客戶
-    setSelectedCustomer(order.customer);
-    
-    // 設定訂單資訊
-    updateOrderInfo(order.orderInfo);
-    
-    // 清空現有銷售項目並載入訂單項目
-    const { clearSalesItems, addSalesItem } = useStore.getState();
-    clearSalesItems();
-    order.items.forEach((item: any) => {
-      addSalesItem(item, item.quantity);
-    });
-    
-    toast.success("訂單已載入至編輯頁面");
-    navigate("/");
+  const loadOrders = () => {
+    const savedOrders = JSON.parse(localStorage.getItem('pendingOrders') || '[]');
+    setOrders(savedOrders);
   };
 
-  // 刪除訂單
-  const handleDeleteOrder = (index: number) => {
+  const handleEdit = (order: any) => {
+    if (onLoadOrder) {
+      onLoadOrder(order);
+      toast.success("訂單已載入至編輯頁面");
+    }
+  };
+
+  const handleStatusChange = (orderId: string, newStatus: string) => {
+    const updatedOrders = orders.map(order => 
+      order.id === orderId 
+        ? { ...order, orderInfo: { ...order.orderInfo, status: newStatus } }
+        : order
+    );
+    setOrders(updatedOrders);
+    localStorage.setItem('pendingOrders', JSON.stringify(updatedOrders));
+    toast.success("訂單狀態已更新");
+  };
+
+  const handleDelete = (orderId: string) => {
     if (confirm("確定要刪除此訂單嗎？")) {
-      const updatedOrders = orders.filter((_, i) => i !== index);
+      const updatedOrders = orders.filter(order => order.id !== orderId);
       localStorage.setItem('pendingOrders', JSON.stringify(updatedOrders));
       setOrders(updatedOrders);
       toast.success("訂單已刪除");
     }
   };
 
-  // 篩選訂單
   const filteredOrders = orders.filter(order =>
     order.orderInfo?.serialNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     order.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -58,7 +59,6 @@ export const OrderList = () => {
 
   return (
     <div className="space-y-6">
-      {/* 概況卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-3">
@@ -89,7 +89,7 @@ export const OrderList = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              ${orders.reduce((sum: number, o: any) => 
+              NT$ {orders.reduce((sum: number, o: any) => 
                 sum + (o.items?.reduce((s: number, item: any) => s + item.totalPrice, 0) || 0), 0
               ).toLocaleString()}
             </div>
@@ -100,12 +100,13 @@ export const OrderList = () => {
             <CardTitle className="text-sm font-medium text-muted-foreground">待處理</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{orders.length}</div>
+            <div className="text-2xl font-bold text-orange-600">
+              {orders.filter(o => o.orderInfo?.status === "待處理").length}
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* 訂單列表 */}
       <Card>
         <CardHeader>
           <CardTitle>訂單紀錄</CardTitle>
@@ -130,7 +131,7 @@ export const OrderList = () => {
                   <TableHead>客戶</TableHead>
                   <TableHead className="text-right">數量</TableHead>
                   <TableHead className="text-right">金額</TableHead>
-                  <TableHead>狀態</TableHead>
+                  <TableHead>訂單狀態</TableHead>
                   <TableHead className="text-right">操作</TableHead>
                 </TableRow>
               </TableHeader>
@@ -143,33 +144,47 @@ export const OrderList = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredOrders.map((order: any, index: number) => {
+                  filteredOrders.map((order: any) => {
                     const totalQuantity = order.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
                     const totalAmount = order.items?.reduce((sum: number, item: any) => sum + item.totalPrice, 0) || 0;
                     
                     return (
-                      <TableRow key={index}>
+                      <TableRow key={order.id}>
                         <TableCell className="font-mono">{order.orderInfo?.serialNumber}</TableCell>
                         <TableCell>{order.orderInfo?.date}</TableCell>
                         <TableCell>{order.customer?.name}</TableCell>
                         <TableCell className="text-right">{totalQuantity}</TableCell>
-                        <TableCell className="text-right">${totalAmount.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">NT$ {totalAmount.toLocaleString()}</TableCell>
                         <TableCell>
-                          <Badge variant="secondary">待處理</Badge>
+                          <Select
+                            value={order.orderInfo?.status || "待處理"}
+                            onValueChange={(value) => handleStatusChange(order.id, value)}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="待處理">待處理</SelectItem>
+                              <SelectItem value="處理中">處理中</SelectItem>
+                              <SelectItem value="已出貨">已出貨</SelectItem>
+                              <SelectItem value="已完成">已完成</SelectItem>
+                              <SelectItem value="已取消">已取消</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-2 justify-end">
                             <Button 
                               variant="ghost" 
                               size="sm"
-                              onClick={() => handleEditOrder(order)}
+                              onClick={() => handleEdit(order)}
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
                             <Button 
                               variant="ghost" 
                               size="sm"
-                              onClick={() => handleDeleteOrder(index)}
+                              onClick={() => handleDelete(order.id)}
                             >
                               <Trash2 className="w-4 h-4 text-destructive" />
                             </Button>
