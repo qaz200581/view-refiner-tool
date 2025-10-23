@@ -9,7 +9,8 @@ import { toast } from "sonner";
 
 type ProductGroup = {
   productCode: string;
-  productName: string;
+  series: string;
+  remark: string;
   vendor: string;
   totalQuantity: number;
   orders: string[];
@@ -74,8 +75,9 @@ export const PurchaseConversion = () => {
           } else {
             productMap.set(key, {
               productCode: item.code,
-              productName: item.series || item.name || item.code,
+              series:  item.name || item.code,
               vendor: item.list?.vender || '未知廠商',
+              remark: item.remark || '',
               totalQuantity: item.quantity || 1,
               orders: [order.orderInfo?.serialNumber || orderId]
             });
@@ -218,6 +220,7 @@ export const PurchaseConversion = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead>選擇</TableHead>
                           <TableHead>產品編號</TableHead>
                           <TableHead>產品名稱</TableHead>
                           <TableHead>總數量</TableHead>
@@ -227,8 +230,12 @@ export const PurchaseConversion = () => {
                       <TableBody>
                         {products.map((product, index) => (
                           <TableRow key={index}>
+                            
+                            <TableCell>                      <Checkbox 
+                              checked={true}  
+                      /></TableCell>
                             <TableCell className="font-mono">{product.productCode}</TableCell>
-                            <TableCell>{product.productName}</TableCell>
+                            <TableCell>{product.series}</TableCell>
                             <TableCell className="font-semibold">{product.totalQuantity}</TableCell>
                             <TableCell>
                               <div className="flex gap-1 flex-wrap">
