@@ -17,7 +17,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CheckCircle, Users, ShoppingCart, Package, X } from "lucide-react";
+import { Users, ShoppingCart, Package, X } from "lucide-react";
+import { NotificationModal } from "@/components/NotificationModal";
 
 const Index = () => {
   const {
@@ -176,26 +177,8 @@ const Index = () => {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* 成功提交模態框 */}
-        <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-          <DialogContent className="sm:max-w-md">
-            <div className="text-center space-y-4 py-6">
-              <CheckCircle className="w-16 h-16 text-success mx-auto" />
-              <div>
-                <h2 className="text-xl font-bold text-success mb-2">訂單提交成功！</h2>
-                <p className="text-muted-foreground">
-                  您的訂單已成功提交，系統正在處理中...
-                </p>
-              </div>
-              <Button 
-                onClick={handleCloseSuccessModal}
-                className="btn-primary w-full"
-              >
-                確認並清空資料
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* 成功提交模態框（抽成元件） */}
+        <NotificationModal />
 
         {/* 頁腳資訊 */}
         <footer className="mt-12 text-center text-sm text-muted-foreground">

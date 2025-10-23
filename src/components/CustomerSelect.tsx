@@ -47,6 +47,15 @@ export const CustomerSelect = () => {
         chainStoreName: selectedCustomer.chainStoreName || "",
       });
       setShowStoreDetails(Boolean(selectedCustomer.storeName || selectedCustomer.chainStoreName));
+    } else {
+      // 當 selectedCustomer 被清除時，同步重置本地表單狀態
+      setCustomerForm({
+        name: "",
+        code: "",
+        storeName: "",
+        chainStoreName: "",
+      });
+      setShowStoreDetails(false);
     }
   }, [selectedCustomer]);
 
