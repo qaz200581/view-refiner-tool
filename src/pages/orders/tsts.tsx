@@ -31,7 +31,6 @@ import {
   ChevronUp,
   Truck,
   Package,
-  ListOrdered,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
@@ -99,7 +98,6 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
 
   // ---------- 搜尋 ----------
   const filteredOrders = useMemo(() => {
-    console.log(orders)
     return orders.filter(
       (order) =>
         order.orderInfo?.serialNumber
@@ -369,18 +367,15 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
                     <AccordionItem
                       key={order.id}
                       value={order.id}
-                      className={`border-2 rounded-lg overflow-hidden shadow-sm ${
-                        batchMode ? "border-amber-300 bg-amber-50/30" : "border-muted/50 bg-white"
-                      }`}
+                      className="border rounded-lg overflow-hidden"
                     >
                       <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/80">
                         <div className="flex justify-between w-full pr-4 text-sm">
                           <div className="flex items-center gap-4">
                             <span className="font-mono font-medium">
-                              訂單編號: {order.orderInfo?.serialNumber}
+                              {order.orderInfo?.serialNumber}
                             </span>
-                            <span>客戶名稱: {order.customer?.name}</span>
-                            <span>訂單日期: {order.orderInfo?.date}</span>
+                            <span>{order.customer?.name}</span>
                           </div>
                           <div className="flex gap-6 text-muted-foreground">
                             <span>數量: {totalQty}</span>
@@ -394,13 +389,13 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
                       <AccordionContent>
                         <Table>
                           <TableHeader>
-                            <TableRow className="bg-muted/40">
+                            <TableRow>
                               <TableHead>商品</TableHead>
+                              <TableHead className="text-right">單價</TableHead>
                               <TableHead className="text-right">數量</TableHead>
-                              {!batchMode && <TableHead className="text-right">單價</TableHead>}
-                              {!batchMode && <TableHead className="text-right">小計</TableHead>}
+                              <TableHead className="text-right">小計</TableHead>
                               {batchMode && (
-                                <TableHead className="text-center text-amber-700">
+                                <TableHead className="text-center">
                                   出貨數量
                                 </TableHead>
                               )}
@@ -412,19 +407,17 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
                               const currentInput =
                                 shipmentInputs[inputKey] || 0;
                               return (
-                                <TableRow className="hover:bg-accent/20 transition-colors duration-200" key={idx}>
-                                  <TableCell className="font-medium">{item.name}</TableCell>
-                                  <TableCell className="text-right">{item.quantity}</TableCell>
-                                  {!batchMode && (
-                                    <TableCell className="text-right">
-                                      NT$ {item.priceDistribution?.toLocaleString() || "-"}
-                                    </TableCell>
-                                  )}
-                                  {!batchMode && (
-                                    <TableCell className="text-right">
-                                      NT$ {item.totalPrice.toLocaleString()}
-                                    </TableCell>
-                                  )}
+                                <TableRow key={idx}>
+                                  <TableCell>{item.name}</TableCell>
+                                  <TableCell className="text-right">
+                                    NT$ {item.priceDistribution?.toLocaleString() || "-"}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {item.quantity}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    NT$ {item.totalPrice.toLocaleString()}
+                                  </TableCell>
                                   {batchMode && (
                                     <TableCell className="text-center">
                                       <Input
@@ -504,7 +497,8 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
                       <AccordionItem
                         key={prod.name}
                         value={prod.name}
-                        className="border border-accent/50 rounded-lg overflow-hidden shadow-sm bg-accent/10">
+                        className="border rounded-lg overflow-hidden"
+                      >
                         <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/80">
                           <div className="flex justify-between w-full pr-4">
                             <span className="font-medium">{prod.name}</span>
@@ -521,7 +515,7 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
                             </div>
                           </div>
                         </AccordionTrigger>
-                        <AccordionContent className={batchMode ? "bg-amber-50" : "bg-white"}>
+                        <AccordionContent className="p-0">
                           <Table>
                             <TableHeader>
                               <TableRow>
@@ -542,7 +536,7 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
                             </TableHeader>
                             <TableBody>
                               {prod.details.map((d: any, idx: number) => (
-                                <TableRow className="hover:bg-accent/20 transition-colors duration-200" key={`${d.orderId}-${idx}`}>
+                                <TableRow key={`${d.orderId}-${idx}`}>
                                   <TableCell className="font-mono">
                                     {d.serialNumber}
                                   </TableCell>
