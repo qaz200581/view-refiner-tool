@@ -31,6 +31,7 @@ import {
   ChevronUp,
   Truck,
   Package,
+  ListOrdered,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
@@ -53,6 +54,7 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
   const [shipmentInputs, setShipmentInputs] = useState<Record<string, number>>(
     {}
   ); // { "orderId-itemIndex": qty }
+
   // ---------- 讀取本地資料 ----------
   useEffect(() => {
     loadOrders();
@@ -164,7 +166,8 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
       a.name.localeCompare(b.name)
     );
   }, [orders]);
-  // 出貨輸入處理
+
+  // ---------- 出貨輸入 ----------
   const handleShipmentInput = (key: string, value: string, max: number) => {
     const num = parseInt(value) || 0;
     if (num < 0) return;
@@ -175,7 +178,7 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
     setShipmentInputs((prev) => ({ ...prev, [key]: num }));
   };
 
-  // 提交批次出貨
+  // ---------- 批次出貨 ----------
   const handleBatchShipment = () => {
     const shipments: any[] = [];
 
@@ -208,18 +211,53 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
       return;
     }
 
-    // 儲存到 shippedOrders
     const existing = JSON.parse(localStorage.getItem("shippedOrders") || "[]");
     const updated = [...existing, ...shipments];
     localStorage.setItem("shippedOrders", JSON.stringify(updated));
 
-    console.log("批次出貨資料：", shipments);
     toast.success(`成功出貨 ${shipments.length} 筆項目`);
-
-    // 重置
     setShipmentInputs({});
     setBatchMode(false);
   };
+
+  // ---------- 批次出貨模式：以客戶分組 ----------
+  const customerGroups = useMemo(() => {
+    const groups: Record<
+      string,
+      { customer: string; totalQty: number; totalAmt: number; items: any[] }
+    > = {};
+
+    filteredOrders.forEach((order) => {
+      const customer = order.customer?.name || "未命名客戶";
+      if (!groups[customer]) {
+        groups[customer] = {
+          customer,
+          totalQty: 0,
+          totalAmt: 0,
+          items: [],
+        };
+      }
+
+      order.items?.forEach((item: any, idx: number) => {
+        const inputKey = `${order.id}-${idx}`;
+        groups[customer].totalQty += item.quantity;
+        groups[customer].totalAmt += item.totalPrice;
+        groups[customer].items.push({
+          orderId: order.id,
+          serialNumber: order.orderInfo?.serialNumber,
+          productName: item.name,
+          quantity: item.quantity,
+          inputKey,
+          currentInput: shipmentInputs[inputKey] ?? 0,
+        });
+      });
+    });
+
+    return Object.values(groups).sort((a, b) =>
+      a.customer.localeCompare(b.customer)
+    );
+  }, [filteredOrders, shipmentInputs]);
+
   // ---------- 渲染 ----------
   return (
     <div className="space-y-6">
@@ -275,7 +313,8 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
           </CardContent>
         </Card>
       </div>
-{/* 視圖切換 + 批次出貨 */}
+
+      {/* 視圖切換 + 批次出貨 */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Button
@@ -310,7 +349,7 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
                 onClick={() => {
                   setBatchMode(true);
                   setShipmentInputs({});
-                  toast.info("已進入批次出貨模式，點擊訂單展開填寫數量");
+                  toast.info("已進入批次出貨模式，依客戶分組填寫出貨數量");
                 }}
               >
                 <Package className="w-4 h-4 mr-2" />
@@ -324,7 +363,11 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
       <Card>
         <CardHeader>
           <CardTitle>
-            {viewMode === "order" ? "訂單紀錄" : "商品彙總"}
+            {viewMode === "order"
+              ? batchMode
+                ? "批次出貨（依客戶）"
+                : "訂單紀錄"
+              : "商品彙總"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -342,8 +385,8 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
             />
           </div>
 
-          {/* 訂單視圖 + 批次出貨 */}
-          {viewMode === "order" && (
+          {/* ==== 訂單視圖 ==== */}
+          {viewMode === "order" && !batchMode && (
             <Accordion type="multiple" className="space-y-2">
               {filteredOrders.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
@@ -367,15 +410,16 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
                     <AccordionItem
                       key={order.id}
                       value={order.id}
-                      className="border rounded-lg overflow-hidden"
+                      className="border-2 rounded-lg overflow-hidden shadow-sm border-muted/50 bg-white"
                     >
                       <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/80">
                         <div className="flex justify-between w-full pr-4 text-sm">
                           <div className="flex items-center gap-4">
                             <span className="font-mono font-medium">
-                              {order.orderInfo?.serialNumber}
+                              訂單編號: {order.orderInfo?.serialNumber}
                             </span>
-                            <span>{order.customer?.name}</span>
+                            <span>客戶名稱: {order.customer?.name}</span>
+                            <span>訂單日期: {order.orderInfo?.date}</span>
                           </div>
                           <div className="flex gap-6 text-muted-foreground">
                             <span>數量: {totalQty}</span>
@@ -389,57 +433,26 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
                       <AccordionContent>
                         <Table>
                           <TableHeader>
-                            <TableRow>
+                            <TableRow className="bg-muted/40">
                               <TableHead>商品</TableHead>
-                              <TableHead className="text-right">單價</TableHead>
                               <TableHead className="text-right">數量</TableHead>
+                              <TableHead className="text-right">單價</TableHead>
                               <TableHead className="text-right">小計</TableHead>
-                              {batchMode && (
-                                <TableHead className="text-center">
-                                  出貨數量
-                                </TableHead>
-                              )}
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {order.items?.map((item: any, idx: number) => {
-                              const inputKey = `${order.id}-${idx}`;
-                              const currentInput =
-                                shipmentInputs[inputKey] || 0;
-                              return (
-                                <TableRow key={idx}>
-                                  <TableCell>{item.name}</TableCell>
-                                  <TableCell className="text-right">
-                                    NT$ {item.priceDistribution?.toLocaleString() || "-"}
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    {item.quantity}
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    NT$ {item.totalPrice.toLocaleString()}
-                                  </TableCell>
-                                  {batchMode && (
-                                    <TableCell className="text-center">
-                                      <Input
-                                        type="number"
-                                        min="0"
-                                        max={item.quantity}
-                                        value={currentInput}
-                                        onChange={(e) =>
-                                          handleShipmentInput(
-                                            inputKey,
-                                            e.target.value,
-                                            item.quantity
-                                          )
-                                        }
-                                        className="w-20 text-center"
-                                        placeholder="0"
-                                      />
-                                    </TableCell>
-                                  )}
-                                </TableRow>
-                              );
-                            })}
+                            {order.items?.map((item: any, idx: number) => (
+                              <TableRow key={idx}>
+                                <TableCell className="font-medium">{item.name}</TableCell>
+                                <TableCell className="text-right">{item.quantity}</TableCell>
+                                <TableCell className="text-right">
+                                  NT$ {item.priceDistribution?.toLocaleString() || "-"}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  NT$ {item.totalPrice.toLocaleString()}
+                                </TableCell>
+                              </TableRow>
+                            ))}
                           </TableBody>
                         </Table>
                         <div className="flex justify-end gap-2 p-4 border-t">
@@ -453,9 +466,7 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
                           </Button>
                           <Select
                             value={order.orderInfo?.status || "待處理"}
-                            onValueChange={(v) =>
-                              handleStatusChange(order.id, v)
-                            }
+                            onValueChange={(v) => handleStatusChange(order.id, v)}
                           >
                             <SelectTrigger className="w-32">
                               <SelectValue />
@@ -473,6 +484,87 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
                     </AccordionItem>
                   );
                 })
+              )}
+            </Accordion>
+          )}
+
+          {/* ==== 批次出貨模式：依客戶分組 ==== */}
+          {viewMode === "order" && batchMode && (
+            <Accordion type="multiple" className="space-y-2">
+              {customerGroups.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>暫無符合條件的訂單</p>
+                </div>
+              ) : (
+                customerGroups.map((group) => (
+                  <AccordionItem
+                    key={group.customer}
+                    value={group.customer}
+                    className="border-2 rounded-lg overflow-hidden shadow-sm border-amber-300 bg-amber-50/30"
+                  >
+                    <AccordionTrigger className="px-4 py-3 bg-amber-100 hover:bg-amber-200">
+                      <div className="flex justify-between w-full pr-4">
+                        <span className="font-semibold text-lg">
+                          {group.customer}
+                        </span>
+                        <div className="flex gap-6 text-sm text-muted-foreground">
+                          <span>
+                            總數量：<strong>{group.totalQty}</strong>
+                          </span>
+                          <span>
+                            總金額：
+                            <strong>NT$ {group.totalAmt.toLocaleString()}</strong>
+                          </span>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="bg-white">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-amber-50">
+                            <TableHead>訂單編號</TableHead>
+                            <TableHead>產品名稱</TableHead>
+                            <TableHead className="text-right">訂購數量</TableHead>
+                            <TableHead className="text-center text-amber-700">
+                              出貨數量
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {group.items.map((it: any, idx: number) => (
+                            <TableRow key={`${it.orderId}-${idx}`}>
+                              <TableCell className="font-mono">
+                                {it.serialNumber}
+                              </TableCell>
+                              <TableCell>{it.productName}</TableCell>
+                              <TableCell className="text-right">
+                                {it.quantity}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max={it.quantity}
+                                  value={it.currentInput}
+                                  onChange={(e) =>
+                                    handleShipmentInput(
+                                      it.inputKey,
+                                      e.target.value,
+                                      it.quantity
+                                    )
+                                  }
+                                  className="w-20 text-center"
+                                  placeholder="0"
+                                />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))
               )}
             </Accordion>
           )}
@@ -497,7 +589,7 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
                       <AccordionItem
                         key={prod.name}
                         value={prod.name}
-                        className="border rounded-lg overflow-hidden"
+                        className="border border-accent/50 rounded-lg overflow-hidden shadow-sm bg-accent/10"
                       >
                         <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/80">
                           <div className="flex justify-between w-full pr-4">
@@ -515,23 +607,17 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
                             </div>
                           </div>
                         </AccordionTrigger>
-                        <AccordionContent className="p-0">
+                        <AccordionContent>
                           <Table>
                             <TableHeader>
                               <TableRow>
                                 <TableHead>訂單編號</TableHead>
                                 <TableHead>客戶</TableHead>
-                                <TableHead className="text-right">
-                                  數量
-                                </TableHead>
-                                <TableHead className="text-right">
-                                  金額
-                                </TableHead>
+                                <TableHead className="text-right">數量</TableHead>
+                                <TableHead className="text-right">金額</TableHead>
                                 <TableHead>狀態</TableHead>
                                 <TableHead>日期</TableHead>
-                                <TableHead className="text-right">
-                                  操作
-                                </TableHead>
+                                <TableHead className="text-right">操作</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>

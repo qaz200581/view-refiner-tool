@@ -1,46 +1,15 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+// src/components/order/OrderList.tsx
+import { useState, useEffect, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import {
-  FileText,
-  Search,
-  Edit,
-  Trash2,
-  ChevronDown,
-  ChevronUp,
-  Truck,
-  Package,
-  ListOrdered,
-} from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { Search, Truck, Package } from "lucide-react";
 import { toast } from "sonner";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+
+import { OrderStats } from "./OrderStats";
+import { OrderView } from "./OrderView";
+import { BatchShipment } from "./BatchShipment";
+import { ProductView } from "./ProductView";
 
 type OrderListProps = {
   onLoadOrder?: (order: any) => void;
@@ -51,107 +20,65 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
   const [orders, setOrders] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<"order" | "product">("order");
   const [batchMode, setBatchMode] = useState(false);
-  const [shipmentInputs, setShipmentInputs] = useState<Record<string, number>>(
-    {}
-  ); // { "orderId-itemIndex": qty }
-  // ---------- 讀取本地資料 ----------
+  const [shipmentInputs, setShipmentInputs] = useState<Record<string, number>>({});
+
   useEffect(() => {
     loadOrders();
   }, []);
 
   const loadOrders = () => {
-    const savedOrders = JSON.parse(
-      localStorage.getItem("pendingOrders") || "[]"
-    );
-    setOrders(savedOrders);
+    const saved = JSON.parse(localStorage.getItem("pendingOrders") || "[]");
+    setOrders(saved);
   };
 
-  // ---------- 編輯、狀態、刪除 ----------
   const handleEdit = (order: any) => {
-    if (onLoadOrder) {
-      onLoadOrder(order);
-      toast.success("訂單已載入至編輯頁面");
-    }
+    onLoadOrder?.(order);
+    toast.success("訂單已載入至編輯頁面");
   };
 
   const handleStatusChange = (orderId: string, newStatus: string) => {
-    const updatedOrders = orders.map((order) =>
-      order.id === orderId
-        ? {
-            ...order,
-            orderInfo: { ...order.orderInfo, status: newStatus },
-          }
-        : order
+    const updated = orders.map((o) =>
+      o.id === orderId ? { ...o, orderInfo: { ...o.orderInfo, status: newStatus } } : o
     );
-    setOrders(updatedOrders);
-    localStorage.setItem("pendingOrders", JSON.stringify(updatedOrders));
+    setOrders(updated);
+    localStorage.setItem("pendingOrders", JSON.stringify(updated));
     toast.success("訂單狀態已更新");
   };
 
-  const handleDelete = (orderId: string) => {
-    if (confirm("確定要刪除此訂單嗎？")) {
-      const updatedOrders = orders.filter((order) => order.id !== orderId);
-      localStorage.setItem("pendingOrders", JSON.stringify(updatedOrders));
-      setOrders(updatedOrders);
-      toast.success("訂單已刪除");
-    }
-  };
-
-  // ---------- 搜尋 ----------
   const filteredOrders = useMemo(() => {
-    console.log(orders)
     return orders.filter(
-      (order) =>
-        order.orderInfo?.serialNumber
-          ?.toLowerCase()
-          .includes(searchQuery.toLowerCase()) ||
-        order.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      (o) =>
+        o.orderInfo?.serialNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        o.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [orders, searchQuery]);
 
-  // ---------- 統計卡 ----------
+  // 統計
   const totalOrders = orders.length;
   const thisMonthOrders = orders.filter((o: any) => {
-    const orderDate = new Date(o.orderInfo?.date);
-    const now = new Date();
-    return (
-      orderDate.getMonth() === now.getMonth() &&
-      orderDate.getFullYear() === now.getFullYear()
-    );
+    const d = new Date(o.orderInfo?.date);
+    const n = new Date();
+    return d.getMonth() === n.getMonth() && d.getFullYear() === n.getFullYear();
   }).length;
-
   const totalAmount = orders.reduce(
-    (sum: number, o: any) =>
-      sum +
-      (o.items?.reduce(
-        (s: number, item: any) => s + item.totalPrice,
-        0
-      ) || 0),
+    (s, o) => s + (o.items?.reduce((a: number, i: any) => a + i.totalPrice, 0) || 0),
     0
   );
+  const pendingOrders = orders.filter((o) => o.orderInfo?.status === "待處理").length;
 
-  const pendingOrders = orders.filter(
-    (o) => o.orderInfo?.status === "待處理"
-  ).length;
-
-  // ---------- 商品視圖資料 ----------
+  // 商品彙總
   const productMap = useMemo(() => {
-    const map = new Map<string, any>();
+    const map = new Map();
     orders.forEach((order) => {
       order.items?.forEach((item: any) => {
         const key = item.name;
         if (!map.has(key)) {
-          map.set(key, {
-            name: item.name,
-            totalQty: 0,
-            totalPrice: 0,
-            details: [],
-          });
+          map.set(key, { name: key, totalQty: 0, totalPrice: 0, details: [] });
         }
-        const entry = map.get(key)!;
-        entry.totalQty += item.quantity;
-        entry.totalPrice += item.totalPrice;
-        entry.details.push({
+        const e = map.get(key);
+        e.totalQty += item.quantity;
+        e.totalPrice += item.totalPrice;
+        e.details.push({
           orderId: order.id,
           serialNumber: order.orderInfo?.serialNumber,
           customer: order.customer?.name,
@@ -162,11 +89,10 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
         });
       });
     });
-    return Array.from(map.values()).sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [orders]);
-  // 出貨輸入處理
+
+  // 出貨輸入
   const handleShipmentInput = (key: string, value: string, max: number) => {
     const num = parseInt(value) || 0;
     if (num < 0) return;
@@ -174,110 +100,100 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
       toast.error(`出貨數量不可超過訂購數量 ${max}`);
       return;
     }
-    setShipmentInputs((prev) => ({ ...prev, [key]: num }));
+    setShipmentInputs((p) => ({ ...p, [key]: num }));
   };
 
-  // 提交批次出貨
+  // 批次出貨
   const handleBatchShipment = () => {
-    const shipments: any[] = [];
+    const groupedShipments: Record<string, any> = {};
 
     Object.entries(shipmentInputs).forEach(([key, qty]) => {
       if (qty <= 0) return;
-      const [orderId, itemIndexStr] = key.split("-");
-      const itemIndex = parseInt(itemIndexStr);
+      const [orderId, itemIdx] = key.split("-");
       const order = orders.find((o) => o.id === orderId);
-      if (!order) return;
+      const item = order?.items?.[parseInt(itemIdx)];
+      if (!order || !item) return;
 
-      const item = order.items?.[itemIndex];
-      if (!item) return;
+      const shipmentDate = new Date().toISOString().split("T")[0];
+      const customer = order.customer?.name || "未知客戶";
+      const serialNumber = order.orderInfo?.serialNumber || "無序號";
+      const groupKey = `${customer}-${serialNumber}-${shipmentDate}`;
 
-      shipments.push({
-        shipmentId: Date.now().toString() + Math.random(),
+      const priceDistribution =
+        item.priceDistribution || item.totalPrice / item.quantity;
+
+      if (!groupedShipments[groupKey]) {
+        groupedShipments[groupKey] = {
+          shipmentId: Date.now() + Math.random(),
+          customer,
+          serialNumber,
+          shipmentDate,
+          productItems: [],
+        };
+      }
+
+      groupedShipments[groupKey].productItems.push({
         orderId: order.id,
-        serialNumber: order.orderInfo?.serialNumber,
-        customer: order.customer?.name,
         productName: item.name,
         quantity: qty,
-        priceDistribution: item.priceDistribution || item.totalPrice / item.quantity,
-        totalPrice: qty * (item.priceDistribution || item.totalPrice / item.quantity),
-        shipmentDate: new Date().toISOString().split("T")[0],
-        status: "已出貨",
+        priceDistribution,
+        totalPrice: qty * priceDistribution,
       });
     });
+
+    const shipments = Object.values(groupedShipments);
 
     if (shipments.length === 0) {
       toast.error("請至少輸入一筆出貨數量");
       return;
     }
 
-    // 儲存到 shippedOrders
+    // 儲存到 localStorage
     const existing = JSON.parse(localStorage.getItem("shippedOrders") || "[]");
-    const updated = [...existing, ...shipments];
-    localStorage.setItem("shippedOrders", JSON.stringify(updated));
+    localStorage.setItem("shippedOrders", JSON.stringify([...existing, ...shipments]));
 
-    console.log("批次出貨資料：", shipments);
-    toast.success(`成功出貨 ${shipments.length} 筆項目`);
+    toast.success(`成功出貨 ${shipments.length} 位客戶`);
+    console.log("出貨資料", shipments);
 
-    // 重置
     setShipmentInputs({});
     setBatchMode(false);
   };
-  // ---------- 渲染 ----------
+
+
+  // 批次出貨：依客戶分組
+  const customerGroups = useMemo(() => {
+    const groups: Record<string, any> = {};
+    filteredOrders.forEach((order) => {
+      const cust = order.customer?.name || "未命名客戶";
+      if (!groups[cust]) {
+        groups[cust] = { customer: cust, totalQty: 0, totalAmt: 0, items: [] };
+      }
+      order.items?.forEach((item: any, idx: number) => {
+        const key = `${order.id}-${idx}`;
+        groups[cust].totalQty += item.quantity;
+        groups[cust].totalAmt += item.totalPrice;
+        groups[cust].items.push({
+          orderId: order.id,
+          serialNumber: order.orderInfo?.serialNumber,
+          productName: item.name,
+          quantity: item.quantity,
+          inputKey: key,
+          currentInput: shipmentInputs[key] ?? 0,
+        });
+      });
+    });
+    return Object.values(groups).sort((a, b) => a.customer.localeCompare(b.customer));
+  }, [filteredOrders, shipmentInputs]);
+
   return (
     <div className="space-y-6">
-      {/* ==== 統計卡 ==== */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              總訂單數
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalOrders}</div>
-          </CardContent>
-        </Card>
+      <OrderStats
+        totalOrders={totalOrders}
+        thisMonthOrders={thisMonthOrders}
+        totalAmount={totalAmount}
+        pendingOrders={pendingOrders}
+      />
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              本月訂單
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {thisMonthOrders}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              總金額
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              NT$ {totalAmount.toLocaleString()}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              待處理
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {pendingOrders}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-{/* 視圖切換 + 批次出貨 */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Button
@@ -312,7 +228,8 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
                 onClick={() => {
                   setBatchMode(true);
                   setShipmentInputs({});
-                  toast.info("已進入批次出貨模式，點擊訂單展開填寫數量");
+                  console.log(customerGroups);
+                  toast.info("已進入批次出貨模式，依客戶分組填寫出貨數量");
                 }}
               >
                 <Package className="w-4 h-4 mr-2" />
@@ -326,7 +243,11 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
       <Card>
         <CardHeader>
           <CardTitle>
-            {viewMode === "order" ? "訂單紀錄" : "商品彙總"}
+            {viewMode === "order"
+              ? batchMode
+                ? "批次出貨（依客戶）"
+                : "訂單紀錄"
+              : "商品彙總"}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -334,9 +255,7 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder={
-                viewMode === "order"
-                  ? "搜尋訂單編號、客戶名稱..."
-                  : "搜尋商品名稱..."
+                viewMode === "order" ? "搜尋訂單編號、客戶名稱..." : "搜尋商品名稱..."
               }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -344,253 +263,31 @@ export const OrderList = ({ onLoadOrder }: OrderListProps) => {
             />
           </div>
 
-          {/* 訂單視圖 + 批次出貨 */}
-          {viewMode === "order" && (
-            <Accordion type="multiple" className="space-y-2">
-              {filteredOrders.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>暫無訂單資料</p>
-                </div>
-              ) : (
-                filteredOrders.map((order: any) => {
-                  const totalQty =
-                    order.items?.reduce(
-                      (s: number, i: any) => s + i.quantity,
-                      0
-                    ) || 0;
-                  const totalAmt =
-                    order.items?.reduce(
-                      (s: number, i: any) => s + i.totalPrice,
-                      0
-                    ) || 0;
-
-                  return (
-                    <AccordionItem
-                      key={order.id}
-                      value={order.id}
-                      className={`border-2 rounded-lg overflow-hidden shadow-sm ${
-                        batchMode ? "border-amber-300 bg-amber-50/30" : "border-muted/50 bg-white"
-                      }`}
-                    >
-                      <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/80">
-                        <div className="flex justify-between w-full pr-4 text-sm">
-                          <div className="flex items-center gap-4">
-                            <span className="font-mono font-medium">
-                              訂單編號: {order.orderInfo?.serialNumber}
-                            </span>
-                            <span>客戶名稱: {order.customer?.name}</span>
-                            <span>訂單日期: {order.orderInfo?.date}</span>
-                          </div>
-                          <div className="flex gap-6 text-muted-foreground">
-                            <span>數量: {totalQty}</span>
-                            <span>NT$ {totalAmt.toLocaleString()}</span>
-                            <Badge variant="outline">
-                              {order.orderInfo?.status || "待處理"}
-                            </Badge>
-                          </div>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-muted/40">
-                              <TableHead>商品</TableHead>
-                              <TableHead className="text-right">數量</TableHead>
-                              {!batchMode && <TableHead className="text-right">單價</TableHead>}
-                              {!batchMode && <TableHead className="text-right">小計</TableHead>}
-                              {batchMode && (
-                                <TableHead className="text-center text-amber-700">
-                                  出貨數量
-                                </TableHead>
-                              )}
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {order.items?.map((item: any, idx: number) => {
-                              const inputKey = `${order.id}-${idx}`;
-                              const currentInput =
-                                shipmentInputs[inputKey] || 0;
-                              return (
-                                <TableRow className="hover:bg-accent/20 transition-colors duration-200" key={idx}>
-                                  <TableCell className="font-medium">{item.name}</TableCell>
-                                  <TableCell className="text-right">{item.quantity}</TableCell>
-                                  {!batchMode && (
-                                    <TableCell className="text-right">
-                                      NT$ {item.priceDistribution?.toLocaleString() || "-"}
-                                    </TableCell>
-                                  )}
-                                  {!batchMode && (
-                                    <TableCell className="text-right">
-                                      NT$ {item.totalPrice.toLocaleString()}
-                                    </TableCell>
-                                  )}
-                                  {batchMode && (
-                                    <TableCell className="text-center">
-                                      <Input
-                                        type="number"
-                                        min="0"
-                                        max={item.quantity}
-                                        value={currentInput}
-                                        onChange={(e) =>
-                                          handleShipmentInput(
-                                            inputKey,
-                                            e.target.value,
-                                            item.quantity
-                                          )
-                                        }
-                                        className="w-20 text-center"
-                                        placeholder="0"
-                                      />
-                                    </TableCell>
-                                  )}
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                        <div className="flex justify-end gap-2 p-4 border-t">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(order)}
-                          >
-                            <Edit className="w-4 h-4 mr-1" />
-                            編輯
-                          </Button>
-                          <Select
-                            value={order.orderInfo?.status || "待處理"}
-                            onValueChange={(v) =>
-                              handleStatusChange(order.id, v)
-                            }
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="待處理">待處理</SelectItem>
-                              <SelectItem value="處理中">處理中</SelectItem>
-                              <SelectItem value="已出貨">已出貨</SelectItem>
-                              <SelectItem value="已完成">已完成</SelectItem>
-                              <SelectItem value="已取消">已取消</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  );
-                })
-              )}
-            </Accordion>
+          {viewMode === "order" && !batchMode && (
+            <OrderView
+              filteredOrders={filteredOrders}
+              onEdit={handleEdit}
+              onStatusChange={handleStatusChange}
+            />
           )}
 
-          {/* ==== 商品視圖 ==== */}
+          {viewMode === "order" && batchMode && (
+            <BatchShipment
+              customerGroups={customerGroups}
+              shipmentInputs={shipmentInputs}
+              onShipmentInput={handleShipmentInput}
+            />
+          )}
+
           {viewMode === "product" && (
-            <div className="space-y-4">
-              {productMap.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>暫無商品資料</p>
-                </div>
-              ) : (
-                <Accordion type="multiple" className="space-y-2">
-                  {productMap
-                    .filter((p) =>
-                      p.name
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase())
-                    )
-                    .map((prod) => (
-                      <AccordionItem
-                        key={prod.name}
-                        value={prod.name}
-                        className="border border-accent/50 rounded-lg overflow-hidden shadow-sm bg-accent/10">
-                        <AccordionTrigger className="px-4 py-3 bg-muted/50 hover:bg-muted/80">
-                          <div className="flex justify-between w-full pr-4">
-                            <span className="font-medium">{prod.name}</span>
-                            <div className="flex gap-6 text-sm text-muted-foreground">
-                              <span>
-                                總數量：<strong>{prod.totalQty}</strong>
-                              </span>
-                              <span>
-                                總金額：
-                                <strong>
-                                  NT$ {prod.totalPrice.toLocaleString()}
-                                </strong>
-                              </span>
-                            </div>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className={batchMode ? "bg-amber-50" : "bg-white"}>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>訂單編號</TableHead>
-                                <TableHead>客戶</TableHead>
-                                <TableHead className="text-right">
-                                  數量
-                                </TableHead>
-                                <TableHead className="text-right">
-                                  金額
-                                </TableHead>
-                                <TableHead>狀態</TableHead>
-                                <TableHead>日期</TableHead>
-                                <TableHead className="text-right">
-                                  操作
-                                </TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {prod.details.map((d: any, idx: number) => (
-                                <TableRow className="hover:bg-accent/20 transition-colors duration-200" key={`${d.orderId}-${idx}`}>
-                                  <TableCell className="font-mono">
-                                    {d.serialNumber}
-                                  </TableCell>
-                                  <TableCell>{d.customer}</TableCell>
-                                  <TableCell className="text-right">
-                                    {d.qty}
-                                  </TableCell>
-                                  <TableCell className="text-right">
-                                    NT$ {d.price.toLocaleString()}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge
-                                      variant={
-                                        d.status === "待處理"
-                                          ? "secondary"
-                                          : d.status === "已完成"
-                                          ? "default"
-                                          : "outline"
-                                      }
-                                    >
-                                      {d.status}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>{d.date}</TableCell>
-                                  <TableCell className="text-right">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        const fullOrder = orders.find(
-                                          (o) => o.id === d.orderId
-                                        );
-                                        if (fullOrder) handleEdit(fullOrder);
-                                      }}
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                </Accordion>
-              )}
-            </div>
+            <ProductView
+              productMap={productMap}
+              searchQuery={searchQuery}
+              onEditOrder={(id) => {
+                const order = orders.find((o) => o.id === id);
+                if (order) handleEdit(order);
+              }}
+            />
           )}
         </CardContent>
       </Card>
