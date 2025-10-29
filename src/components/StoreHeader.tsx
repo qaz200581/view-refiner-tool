@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { useStore } from "@/hooks/useStore";
 import { StoreControls } from "./StoreControls";
-import { Dashboard } from "@/pages/Dashboard";
+
 export const StoreHeader = () => {
   const { selectedCustomer, salesItems, getTotalAmount, getTotalQuantity } = useStore();
 
@@ -38,9 +38,9 @@ export const StoreHeader = () => {
             <div className="text-sm text-muted-foreground">尚無商品</div>
           )}
         </div>
-        
-        {/* 使用獨立的 StoreControls 元件來顯示操作按鈕 
-        <StoreControls />*/}
+
+        {/* 使用獨立的 StoreControls 元件來顯示操作按鈕 */}
+        <StoreControls />
       </div>
     </Card>
   );

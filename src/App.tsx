@@ -19,7 +19,6 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
         <Sonner position="top-center" />
         <HashRouter>
           <Routes>

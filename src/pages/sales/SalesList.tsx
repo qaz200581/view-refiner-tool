@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Search, Edit, FileText } from "lucide-react";
+import { useStore } from "@/hooks/useStore";
 
 export const SalesList = () => {
   const [searchQuery, setSearchQuery] = useState("");

@@ -35,9 +35,8 @@ type TabType = {
 
 export const Dashboard = () => {
   const [activeTab, setActiveTab] = useState<string>("sales-1");
-  const [openTabs, setOpenTabs] = useState<TabType[]>([
-    { id: "sales-1", type: "sales", label: "新增訂單 #1" }
-  ]);
+  const [openTabs, setOpenTabs] = useState<TabType[]>([ { id: "sales-1", type: "sales", label: "新增訂單 #1" } ]);
+
   const [dragStartX, setDragStartX] = useState(0);
   const [dragCurrentX, setDragCurrentX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
