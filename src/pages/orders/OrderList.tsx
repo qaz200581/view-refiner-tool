@@ -10,6 +10,7 @@ import { OrderStats } from "./OrderStats";
 import { OrderView } from "./OrderView";
 import { BatchShipment } from "./BatchShipment";
 import { ProductView } from "./ProductView";
+import { useStore } from "@/hooks/useStore";
 
 type OrderListProps = {
   onLoadOrder?: (order: any) => void;
@@ -17,14 +18,16 @@ type OrderListProps = {
 
 export const OrderList = ({ onLoadOrder }: OrderListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [orders, setOrders] = useState<any[]>([]);
+  const { orders, loadOrdersFromApi, setOrders } = useStore();
   const [viewMode, setViewMode] = useState<"order" | "product">("order");
   const [batchMode, setBatchMode] = useState(false);
   const [shipmentInputs, setShipmentInputs] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    loadOrders();
-  }, []);
+    const saved = JSON.parse(localStorage.getItem("pendingOrders") || "[]");
+    if (saved.length > 0) setOrders(saved);
+    else loadOrdersFromApi();
+  }, [loadOrdersFromApi, setOrders]);
 
   const loadOrders = () => {
     const saved = JSON.parse(localStorage.getItem("pendingOrders") || "[]");

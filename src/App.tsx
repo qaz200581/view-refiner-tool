@@ -14,6 +14,7 @@ const App = () => {
   useEffect(() => {
     useStore.getState().loadProductsFromApi();
     useStore.getState().loadCustomersFromApi();
+    useStore.getState().loadOrdersFromApi();
   }, []);
 
   return (
